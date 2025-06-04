@@ -1,15 +1,14 @@
 import logging
 import os
-from datetime import datetime, time
-import pytz
-from telegram.ext import Application, CommandHandler, MessageHandler, ContextTypes, filters
-from telegram import Update
-import redis
 import json
+import redis
+from telegram.ext import Application, CommandHandler, MessageHandler, ContextTypes, filters
+from telegram import Update, Bot
 
-# ✅ Variabili d'ambiente
+# ✅ Variabili d’ambiente
 BOT_TOKEN = os.environ.get("BOT_TOKEN")
 REDIS_URL = os.environ.get("REDIS_URL")
+ADMIN_CHAT_ID = os.environ.get("ADMIN_CHAT_ID")  # Inserisci il tuo chat ID Telegram nei segreti
 
 # 🔌 Connessione a Redis
 r = redis.Redis.from_url(REDIS_URL, decode_responses=True)
@@ -25,27 +24,28 @@ def save_counter(count: int):
 # 📊 Contatore globale
 fabbio_count = load_counter()
 
+# 🕑 Controllo orario attivo (2:00–8:00 disattivo)
+def is_bot_sleeping() -> bool:
+    from datetime import datetime
+    hour = datetime.utcnow().hour + 2  # Converti UTC → ora italiana
+    return 2 <= hour < 8
+
 # 📥 Gestione messaggi
 async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     global fabbio_count
-
     if not update.message or not update.message.text:
-        return
-
-    # ⏰ Verifica orario corrente
-    now = datetime.now(pytz.timezone("Europe/Rome")).time()
-    if time(0, 40) <= now < time(8, 0):
-        await update.message.reply_text(
-            "😴 Fabbio sta dormendo dalle 00:40 alle 08:00...\n"
-            "Torna più tardi!\n\n"
-            "⏳ I 'Fabbio' scritti adesso **non verranno conteggiati**!"
-        )
         return
 
     text = update.message.text.lower()
     count = text.count("fabbio")
 
     if count > 0:
+        if is_bot_sleeping():
+            await update.message.reply_text(
+                "😴 Fabbio dorme tra le 2 e le 8. I 'Fabbio' scritti ora non saranno conteggiati. Zzz..."
+            )
+            return
+
         fabbio_count += count
         save_counter(fabbio_count)
 
@@ -82,12 +82,24 @@ async def show_stats(update: Update, context: ContextTypes.DEFAULT_TYPE):
         f"📊 Abbiamo scritto {fabbio_count} volte Fabbio. Fabbio ti amiamo.\n\n🏆 Classifica:\n{leaderboard}"
     )
 
+# 📬 Messaggio all'avvio (solo se il bot si è appena riattivato)
+async def send_startup_message():
+    if not ADMIN_CHAT_ID:
+        return
+    bot = Bot(token=BOT_TOKEN)
+    await bot.send_message(
+        chat_id=ADMIN_CHAT_ID,
+        text="🟢 *Fabbio è sveglio!* Da adesso ogni 'Fabbio' verrà contato come si deve 😎",
+        parse_mode="Markdown"
+    )
+
 # ▶️ Avvio del bot
 def main():
     logging.basicConfig(level=logging.INFO)
     app = Application.builder().token(BOT_TOKEN).build()
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
     app.add_handler(CommandHandler("stats", show_stats))
+    app.create_task(send_startup_message())
     logging.info("✅ Bot avviato")
     app.run_polling()
 
