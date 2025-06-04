@@ -10,15 +10,12 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Start bot on Railway
+        shell: bash
         run: |
           curl -X POST https://backboard.railway.app/graphql \
             -H "Content-Type: application/json" \
             -H "Authorization: Bearer $RAILWAY_TOKEN" \
-            -d @- <<EOF
-{
-  "query": "mutation { deployService(id: \\\"$RAILWAY_SERVICE_ID\\\") { id } }"
-}
-EOF
+            -d '{"query":"mutation { deployService(id: \"'"$RAILWAY_SERVICE_ID"'\") { id } }"}'
         env:
           RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
           RAILWAY_SERVICE_ID: ${{ secrets.RAILWAY_SERVICE_ID }}
