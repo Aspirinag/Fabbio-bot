@@ -10,15 +10,12 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Stop bot on Railway
+        shell: bash
         run: |
           curl -X POST https://backboard.railway.app/graphql \
             -H "Content-Type: application/json" \
             -H "Authorization: Bearer $RAILWAY_TOKEN" \
-            -d @- <<EOF
-{
-  "query": "mutation { stopService(id: \\\"$RAILWAY_SERVICE_ID\\\") }"
-}
-EOF
+            -d '{"query":"mutation { stopService(id: \"'"$RAILWAY_SERVICE_ID"'\") }"}'
         env:
           RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
           RAILWAY_SERVICE_ID: ${{ secrets.RAILWAY_SERVICE_ID }}
