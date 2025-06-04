@@ -49,4 +49,4 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
         fabbio_count += count
         save_counter(fabbio_count)
 
-        user_id = str(update.effe_
+user_id = str(update.effective_user.id)
