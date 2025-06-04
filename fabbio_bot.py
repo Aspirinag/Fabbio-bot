@@ -2,24 +2,23 @@ import logging
 import os
 from telegram.ext import Application, CommandHandler, MessageHandler, ContextTypes, filters
 from telegram import Update
-from tinydb import TinyDB, Query
+import redis
+import json
 
-# ✅ Prende il token dall’ambiente
+# ✅ Prende le variabili d’ambiente
 BOT_TOKEN = os.environ.get("BOT_TOKEN")
+REDIS_URL = os.environ.get("REDIS_URL")
 
-# 📁 TinyDB setup
-db = TinyDB("fabbio_db.json")
-meta_table = db.table("meta")
-user_table = db.table("users")
+# 🔌 Connessione a Redis
+r = redis.Redis.from_url(REDIS_URL, decode_responses=True)
 
 # 🔁 Carica il contatore globale
 def load_counter() -> int:
-    data = meta_table.get(doc_id=1)
-    return data["count"] if data else 18510  # partenza da 18.510 se non esiste
+    return int(r.get("fabbio_count") or 18510)
 
 # 💾 Salva il contatore globale
 def save_counter(count: int):
-    meta_table.upsert({"count": count}, doc_ids=[1])
+    r.set("fabbio_count", count)
 
 # 📊 Contatore globale
 fabbio_count = load_counter()
@@ -37,30 +36,35 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
         fabbio_count += count
         save_counter(fabbio_count)
 
-        # 🧑‍💻 Aggiorna conteggio per utente
-        user_id = update.effective_user.id
+        user_id = str(update.effective_user.id)
         username = update.effective_user.username or update.effective_user.first_name or "Sconosciuto"
-        existing = user_table.get(Query().user_id == user_id)
-        if existing:
-            user_table.update(
-                {"count": existing["count"] + count, "username": username},
-                Query().user_id == user_id
-            )
-        else:
-            user_table.insert({"user_id": user_id, "username": username, "count": count})
+
+        # 📈 Aggiorna classifica per utente
+        current = json.loads(r.get(f"user:{user_id}") or '{"count": 0, "username": ""}')
+        current["count"] += count
+        current["username"] = username
+        r.set(f"user:{user_id}", json.dumps(current))
 
         if fabbio_count % 1000 == 0:
             await update.message.reply_text(f"🎉 Abbiamo scritto {fabbio_count} volte Fabbio. Fabbio ti amiamo.")
 
 # 📈 Comando /stats
 async def show_stats(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    top_users = sorted(user_table.all(), key=lambda x: x["count"], reverse=True)[:3]
+    all_keys = r.keys("user:*")
+    users = []
+
+    for key in all_keys:
+        data = json.loads(r.get(key))
+        users.append((data["username"], data["count"]))
+
+    top_users = sorted(users, key=lambda x: x[1], reverse=True)[:3]
     leaderboard = "\n".join(
-        [f"🥇 {u['username']}: {u['count']} volte" if i == 0 else
-         f"🥈 {u['username']}: {u['count']} volte" if i == 1 else
-         f"🥉 {u['username']}: {u['count']} volte"
+        [f"🥇 {u[0]}: {u[1]} volte" if i == 0 else
+         f"🥈 {u[0]}: {u[1]} volte" if i == 1 else
+         f"🥉 {u[0]}: {u[1]} volte"
          for i, u in enumerate(top_users)]
     )
+
     await update.message.reply_text(
         f"📊 Abbiamo scritto {fabbio_count} volte Fabbio. Fabbio ti amiamo.\n\n🏆 Classifica:\n{leaderboard}"
     )
@@ -76,4 +80,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
