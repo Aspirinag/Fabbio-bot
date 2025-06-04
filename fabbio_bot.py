@@ -1,6 +1,6 @@
 import logging
 import os
-from datetime import datetime
+from datetime import datetime, time
 import pytz
 from telegram.ext import Application, CommandHandler, MessageHandler, ContextTypes, filters
 from telegram import Update
@@ -33,10 +33,10 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return
 
     # ⏰ Verifica orario corrente
-    now = datetime.now(pytz.timezone("Europe/Rome"))
-    if 2 <= now.hour < 8:
+    now = datetime.now(pytz.timezone("Europe/Rome")).time()
+    if time(0, 40) <= now < time(8, 0):
         await update.message.reply_text(
-            "😴 Fabbio sta dormendo dalle 2:00 alle 8:00...\n"
+            "😴 Fabbio sta dormendo dalle 00:40 alle 08:00...\n"
             "Torna più tardi!\n\n"
             "⏳ I 'Fabbio' scritti adesso **non verranno conteggiati**!"
         )
