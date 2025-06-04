@@ -1,0 +1,41 @@
+name: Weekly Redis Backup
+
+on:
+  schedule:
+    - cron: '0 7 * * 1'  # Ogni lunedì alle 09:00 italiane
+  workflow_dispatch:
+
+jobs:
+  backup:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v3
+
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+
+      - name: Install Redis client
+        run: pip install redis
+
+      - name: Dump Redis counter to file
+        env:
+          REDIS_URL: ${{ secrets.REDIS_URL }}
+        run: |
+          python3 <<EOF
+import redis, json, os
+r = redis.Redis.from_url(os.environ["REDIS_URL"], decode_responses=True)
+count = r.get("fabbio_count")
+with open("backup_fabbio_count.json", "w") as f:
+    json.dump({"fabbio_count": count}, f)
+EOF
+
+      - name: Commit backup
+        run: |
+          git config user.name "GitHub Actions"
+          git config user.email "actions@github.com"
+          git add backup_fabbio_count.json
+          git commit -m "Weekly backup fabbio_count" || echo "No changes"
+          git push
