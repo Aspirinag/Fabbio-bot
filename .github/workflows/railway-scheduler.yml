@@ -2,11 +2,9 @@ name: Railway Bot Scheduler
 
 on:
   schedule:
-    # ⏹️ Spegni ogni giorno alle 00:40 italiane (22:40 UTC)
-    - cron: '40 22 * * *'
-    # ▶️ Avvia ogni giorno alle 08:00 italiane (06:00 UTC)
-    - cron: '0 6 * * *'
-  workflow_dispatch:  # ✅ Permette di eseguirlo manualmente da GitHub
+    - cron: '40 22 * * *'  # Spegnimento 00:40 italiane
+    - cron: '0 6 * * *'    # Avvio 08:00 italiane
+  workflow_dispatch:       # Permette run manuale
 
 jobs:
   control-bot:
@@ -16,11 +14,5 @@ jobs:
         run: |
           if [ "${{ github.event.schedule }}" = "40 22 * * *" ]; then
             echo "Stopping bot..."
-            curl -X POST "https://backboard.railway.app/graphql" \
-              -H "Content-Type: application/json" \
-              -H "Authorization: Bearer $RAILWAY_TOKEN" \
-              -d "{\"query\":\"mutation { stopService(id: \\\"$RAILWAY_SERVICE_ID\\\") }\"}"
-          else
-            echo "Starting bot..."
-            curl -X POST "https://backboard.railway.app/graphql" \
-              -H "Cont
+            curl -X POST https://backboard.railway.app/graphql \
+              -H "Content-Type:
