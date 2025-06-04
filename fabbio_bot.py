@@ -1,11 +1,13 @@
 import logging
 import os
+from datetime import datetime
+import pytz
 from telegram.ext import Application, CommandHandler, MessageHandler, ContextTypes, filters
 from telegram import Update
 import redis
 import json
 
-# ✅ Prende le variabili d’ambiente
+# ✅ Variabili d'ambiente
 BOT_TOKEN = os.environ.get("BOT_TOKEN")
 REDIS_URL = os.environ.get("REDIS_URL")
 
@@ -26,7 +28,18 @@ fabbio_count = load_counter()
 # 📥 Gestione messaggi
 async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     global fabbio_count
+
     if not update.message or not update.message.text:
+        return
+
+    # ⏰ Verifica orario corrente
+    now = datetime.now(pytz.timezone("Europe/Rome"))
+    if 2 <= now.hour < 8:
+        await update.message.reply_text(
+            "😴 Fabbio sta dormendo dalle 2:00 alle 8:00...\n"
+            "Torna più tardi!\n\n"
+            "⏳ I 'Fabbio' scritti adesso **non verranno conteggiati**!"
+        )
         return
 
     text = update.message.text.lower()
@@ -75,7 +88,7 @@ def main():
     app = Application.builder().token(BOT_TOKEN).build()
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
     app.add_handler(CommandHandler("stats", show_stats))
-    logging.info("✅ Application started")
+    logging.info("✅ Bot avviato")
     app.run_polling()
 
 if __name__ == "__main__":
