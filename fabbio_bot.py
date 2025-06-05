@@ -216,12 +216,13 @@ async def main():
     app.add_handler(CommandHandler("sacrifico", sacrifico))
     app.add_handler(CommandHandler("help", help_command))
 
-    await app.run_webhook(
-        listen="0.0.0.0",
-        port=PORT,
-        webhook_path=WEBHOOK_PATH,
-        allowed_updates=Update.ALL_TYPES,
-        stop_signals=None
+  await app.run_webhook(
+    listen="0.0.0.0",
+    port=PORT,
+    path=WEBHOOK_PATH,
+    allowed_updates=Update.ALL_TYPES,
+    stop_signals=None
+)
     )
 
 if __name__ == "__main__":
