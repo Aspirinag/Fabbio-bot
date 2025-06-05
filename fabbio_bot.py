@@ -98,7 +98,6 @@ ACHIEVEMENTS = [
     (49000, "👼 Avatarbio", "Fabbio prende forma in te."),
     (50000, "🌟 Fabbioddio", "La tua parola è divinità.")
 ]
-
 def is_bot_sleeping():
     now = datetime.utcnow()
     hour = (now.hour + 2) % 24
@@ -138,14 +137,21 @@ def main():
             "/evangelizza @utente – Diffondi il Nome"
         )
 
+    async def show_me(update: Update, context: ContextTypes.DEFAULT_TYPE):
+        user_id = str(update.effective_user.id)
+        data = json.loads(r.get(f"user:{user_id}") or json.dumps({"count": 0, "username": "Sconosciuto"}))
+        username = data.get("username", "Sconosciuto")
+        count = data.get("count", 0)
+        await update.message.reply_text(f"👤 {username}, hai scritto 'Fabbio' {count} volte.")
+
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
     app.add_handler(CommandHandler("stats", show_stats))
     app.add_handler(CommandHandler("top", show_top))
     app.add_handler(CommandHandler("me", show_me))
-    app.add_handler(CommandHandler("achievements", show_achievements))
-    app.add_handler(CommandHandler("fabbioquiz", fabbio_quiz))
-    app.add_handler(CommandHandler("evangelizza", evangelizza))
-    app.add_handler(CommandHandler("sacrifico", sacrifico))
+    app.add_handler(CommandHandler("achievements", lambda u, c: None))
+    app.add_handler(CommandHandler("fabbioquiz", lambda u, c: None))
+    app.add_handler(CommandHandler("evangelizza", lambda u, c: None))
+    app.add_handler(CommandHandler("sacrifico", lambda u, c: None))
     app.add_handler(CommandHandler("help", help_command))
 
     app.run_polling()
