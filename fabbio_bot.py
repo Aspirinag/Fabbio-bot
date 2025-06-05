@@ -203,12 +203,17 @@ async def sacrifico(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(f"Hai sacrificato 100 Fabbii. Bravo {insulto}.")
 
 async def main():
+    import logging
+    from aiohttp import web
+
     logging.basicConfig(level=logging.INFO)
     app = Application.builder().token(BOT_TOKEN).build()
 
+    # Rimuove eventuali webhook precedenti e imposta il nuovo
     await app.bot.delete_webhook(drop_pending_updates=True)
     await app.bot.set_webhook(url=f"{DOMAIN}{WEBHOOK_PATH}")
 
+    # Aggiunta degli handler
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
     app.add_handler(CommandHandler("stats", show_stats))
     app.add_handler(CommandHandler("top", show_top))
@@ -219,10 +224,10 @@ async def main():
     app.add_handler(CommandHandler("sacrifico", sacrifico))
     app.add_handler(CommandHandler("help", help_command))
 
-    # AIOHTTP per Railway
+    # Configura aiohttp per ricevere le richieste webhook da Telegram
     web_app = web.Application()
     web_app.add_routes([
-        web.post(WEBHOOK_PATH, app.request_handler)
+        web.post(WEBHOOK_PATH, app.as_handler())  # <- ✅ Corretto handler
     ])
 
     runner = web.AppRunner(web_app)
@@ -232,10 +237,12 @@ async def main():
 
     print(f"🌐 Webhook attivo su {DOMAIN}{WEBHOOK_PATH}")
 
+    # Mantieni il bot attivo
     while True:
         await asyncio.sleep(3600)
 
-# BOOTSTRAP
 if __name__ == "__main__":
+    import nest_asyncio
     nest_asyncio.apply()
     asyncio.run(main())
+
