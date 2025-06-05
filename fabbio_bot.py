@@ -216,9 +216,7 @@ async def main():
     app.add_handler(CommandHandler("sacrifico", sacrifico))
     app.add_handler(CommandHandler("help", help_command))
 
-    # ✅ CORRETTA INDENTAZIONE
-    from aiohttp import web
-
+    # AIOHTTP per Railway
     web_app = web.Application()
     web_app.add_routes([
         web.post(WEBHOOK_PATH, app.request_handler)
@@ -229,12 +227,12 @@ async def main():
     site = web.TCPSite(runner, "0.0.0.0", PORT)
     await site.start()
 
-        print(f"🌐 Webhook attivo su {DOMAIN}{WEBHOOK_PATH}")
+    print(f"🌐 Webhook attivo su {DOMAIN}{WEBHOOK_PATH}")
 
     while True:
         await asyncio.sleep(3600)
 
+# BOOTSTRAP
 if __name__ == "__main__":
-    import nest_asyncio
     nest_asyncio.apply()
     asyncio.run(main())
