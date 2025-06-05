@@ -45,8 +45,8 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if count > 0:
         if is_bot_sleeping():
             await update.message.reply_text(
-                "😴 Fabbio dorme tra le 2 e le 8. I 'Fabbio' scritti ora non saranno conteggiati. Zzz..."
-            )
+    "😴 Fabbio dorme tra le 2 e le 8. I 'Fabbio' scritti ora non saranno conteggiati. Zzz..."
+)
             return
 
         fabbio_count += count
