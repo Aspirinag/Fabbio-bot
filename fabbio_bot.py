@@ -25,10 +25,13 @@ def save_counter(count: int):
 # 📊 Contatore globale
 fabbio_count = load_counter()
 
-# 🕑 Controllo orario (2–8 italiane)
+# 🕑 Controllo orario (00:40–08:00 italiane)
 def is_bot_sleeping() -> bool:
-    hour = (datetime.utcnow().hour + 2) % 24
-    return 2 <= hour < 8
+    now = datetime.utcnow()
+    hour = (now.hour + 2) % 24
+    minute = now.minute
+
+    return (hour == 0 and minute >= 40) or (0 < hour < 8)
 
 # 📥 Gestione dei messaggi
 async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
