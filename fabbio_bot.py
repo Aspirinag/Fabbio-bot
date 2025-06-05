@@ -98,6 +98,8 @@ ACHIEVEMENTS = [
     (49000, "👼 Avatarbio", "Fabbio prende forma in te."),
     (50000, "🌟 Fabbioddio", "La tua parola è divinità.")
 ]
+fabbio_count = int(r.get("fabbio_count") or 0)
+
 def is_bot_sleeping():
     now = datetime.utcnow()
     hour = (now.hour + 2) % 24
@@ -109,10 +111,39 @@ def main():
     app = Application.builder().token(BOT_TOKEN).build()
 
     async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
-        pass
+        global fabbio_count
+        if not update.message or not update.message.text:
+            return
+
+        text = update.message.text.lower()
+        count = sum(text.count(alias) for alias in ALIASES)
+
+        if count > 0:
+            if is_bot_sleeping():
+                await update.message.reply_text("😴 Fabbio dorme tra le 00:40 e le 08. I 'Fabbio' scritti ora non saranno conteggiati. Zzz...")
+                return
+
+            fabbio_count += count
+            r.set("fabbio_count", fabbio_count)
+
+            user_id = str(update.effective_user.id)
+            username = update.effective_user.username or update.effective_user.first_name or "Sconosciuto"
+            current = json.loads(r.get(f"user:{user_id}") or json.dumps({"count": 0, "username": username, "unlocked": []}))
+            current["count"] += count
+            current["username"] = username
+            unlocked = set(current.get("unlocked", []))
+
+            for threshold, title, desc in ACHIEVEMENTS:
+                if current["count"] >= threshold and str(threshold) not in unlocked:
+                    unlocked.add(str(threshold))
+                    await update.message.reply_text(f"🏆 *{title}* — {desc}", parse_mode="Markdown")
+
+            current["unlocked"] = list(unlocked)
+            r.set(f"user:{user_id}", json.dumps(current))
 
     async def show_stats(update: Update, context: ContextTypes.DEFAULT_TYPE):
-        pass
+        count = int(r.get("fabbio_count") or 0)
+        await update.message.reply_text(f"📊 Abbiamo scritto {count} volte Fabbio. Fabbio ti amiamo.")
 
     async def show_top(update: Update, context: ContextTypes.DEFAULT_TYPE):
         all_keys = r.keys("user:*")
@@ -182,4 +213,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
