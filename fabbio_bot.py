@@ -108,28 +108,30 @@ async def main():
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
     app.add_handler(CommandHandler("stats", show_stats))
 
-    # Inizializza l'app prima di impostare il webhook
+    # Inizializza app Telegram
     await app.initialize()
 
-    # Prepara il server aiohttp PRIMA di avviare il bot
+    # Inizia server AIOHTTP prima di settare il webhook
     web_app = web.Application()
     web_app.add_routes([web.post(WEBHOOK_PATH, telegram_webhook_handler)])
     runner = web.AppRunner(web_app)
     await runner.setup()
     site = web.TCPSite(runner, "0.0.0.0", PORT)
     await site.start()
+
     print(f"🌐 Webhook attivo su {DOMAIN}{WEBHOOK_PATH}")
 
-    # Elimina webhook precedente e imposta quello nuovo
+    # Solo ora elimina e imposta il webhook
     await app.bot.delete_webhook(drop_pending_updates=True)
     await app.bot.set_webhook(url=f"{DOMAIN}{WEBHOOK_PATH}")
 
-    # Infine avvia il bot
+    # Avvia l'app Telegram
     await app.start()
 
-    # Loop infinito
+    # Mantieni in esecuzione
     while True:
         await asyncio.sleep(3600)
+
 
 if __name__ == "__main__":
     nest_asyncio.apply()
