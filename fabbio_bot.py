@@ -222,7 +222,7 @@ async def main():
     app.add_handler(CommandHandler("sacrifico", sacrifico))
     app.add_handler(CommandHandler("help", help_command))
 
-     async def telegram_webhook_handler(request):
+    async def telegram_webhook_handler(request):
         print("✅ Ricevuta richiesta webhook")
         try:
             data = await request.json()
@@ -247,8 +247,3 @@ async def main():
 
     while True:
         await asyncio.sleep(3600)
-
-if __name__ == "__main__":
-    import nest_asyncio
-    nest_asyncio.apply()
-    asyncio.run(main())
