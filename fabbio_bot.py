@@ -4,20 +4,19 @@ import json
 import random
 from datetime import datetime
 import redis
-from aiohttp import web  # ✅ IMPORTA QUI!
+from aiohttp import web
 import asyncio
 import nest_asyncio
 
 from telegram import Update
 from telegram.ext import Application, CommandHandler, MessageHandler, ContextTypes, filters
 
+# 🔐 Config
 BOT_TOKEN = os.environ.get("BOT_TOKEN")
 REDIS_URL = os.environ.get("REDIS_URL")
-ADMIN_CHAT_ID = os.environ.get("ADMIN_CHAT_ID")
-DOMAIN = os.environ.get("DOMAIN")  # es: https://tuo-bot.up.railway.app
+DOMAIN = os.environ.get("DOMAIN")
 WEBHOOK_PATH = "/webhook"
 PORT = int(os.environ.get("PORT", 8000))
-ADMIN_IDS = [int(ADMIN_CHAT_ID)] if ADMIN_CHAT_ID else []
 
 r = redis.Redis.from_url(REDIS_URL, decode_responses=True)
 
@@ -48,64 +47,10 @@ EVANGELI = [
     "🍷 *Bevi del calice verbale. Bevi di Fabbio.*"
 ]
 
-INSULTI_SACRIFICIO = [
-    "Coglione", "Inutile", "Bifolco del verbo", "Scarto sacro",
-    "Eresiarca", "Discepolo zoppo", "Verboschiavo", "Moccioso del culto"
-]
+INSULTI_SACRIFICIO = ["Coglione", "Inutile", "Bifolco del verbo", "Scarto sacro", "Eresiarca", "Discepolo zoppo", "Verboschiavo", "Moccioso del culto"]
 
+ACHIEVEMENTS = [(1000, "🌱 Novabbio", "Hai sussurrato il Nome per la prima volta.")]
 
-ACHIEVEMENTS = [
-    (1000, "🌱 Novabbio", "Hai sussurrato il Nome per la prima volta."),
-    (2000, "🔥 Fabbiosauro", "Hai urlato Fabbio oltre l’eco della valle."),
-    (3000, "💪 Fabbricatore", "Hai scolpito 3000 Fabbii nella roccia digitale."),
-    (4000, "🧔 Barbabio", "Ogni pelo della tua barba dice 'Fabbio'."),
-    (5000, "🗯️ Bestebbio", "Hai bestemmiato Fabbio col cuore puro."),
-    (6000, "🚀 Astronabbio", "Hai portato il verbo in orbita."),
-    (7000, "📚 Fabbioteca", "Conservi ogni invocazione in pergamene mistiche."),
-    (8000, "👽 MetaFabbio", "Sei oltre il concetto stesso di Fabbio."),
-    (9000, "🌊 TsuFabbio", "Hai annegato il mondo nel verbo."),
-    (10000, "✋ Palmobio", "Hai toccato il verbo con dita sacre."),
-    (11000, "🧙‍♂️ Fabbiomante", "Predici il futuro evocando Fabbio."),
-    (12000, "🕯️ Candabbio", "La tua fiamma interiore è verbosa."),
-    (13000, "📖 BibbiaFab", "Scrivi il nuovo testamento Fabbioso."),
-    (14000, "🪵 TroncoVerbo", "Pianti alberi di parola."),
-    (15000, "💨 Sbuffabbio", "Ogni sospiro è un Fabbio."),
-    (16000, "🙌 Fabbionico", "Le tue mani fanno solo miracoli verbali."),
-    (17000, "🌑 Eclissabbio", "Offuschi il sole con la Fabbiosità."),
-    (18000, "⌨️ TastoDivino", "Ogni tasto è consacrato."),
-    (19000, "📜 Scrollabbio", "Le tue pergamene fanno piangere i santi."),
-    (20000, "📢 Urlabbio", "Ti sentono anche nei log dimenticati."),
-    (21000, "🐝 Fabbionetta", "Le api parlano il tuo nome."),
-    (22000, "📷 Selfabbio", "Ogni foto è un'icona sacra."),
-    (23000, "🌌 Cosmobio", "Hai creato galassie con la lingua."),
-    (24000, "💤 Dormibbio", "Sogni solo Fabbio. Sempre."),
-    (25000, "🗣️ Fabbiobalbo", "Anche balbettando, citi il Verbo."),
-    (26000, "🌀 Vortibbio", "Un turbine di Fabbii ti avvolge."),
-    (27000, "📦 Jsonabbio", "Parli in strutture dati."),
-    (28000, "🔊 Redisfabbio", "Redis ti sogna di notte."),
-    (29000, "📱 Emofabbio", "Le emoji ti venerano."),
-    (30000, "💧 Algofabbio", "Hai battezzato un algoritmo con il Nome."),
-    (31000, "📡 Webfabbio", "I webhook ti obbediscono."),
-    (32000, "🤐 Tacibbio", "Zittisci i ciarlatani con un verbo."),
-    (33000, "📘 Fabbiovangelo", "Scrivi verità ogni giorno."),
-    (34000, "🕰️ Tempibio", "Manipoli le ere con parole."),
-    (35000, "👑 Adminato", "Gli admin ti pregano."),
-    (36000, "📖 GrammaFab", "Hai piegato la sintassi."),
-    (37000, "⌨️ Tastobio", "Distruggi tastiere evocando."),
-    (38000, "🔇 SilenzioRotto", "Hai frantumato il nulla."),
-    (39000, "🧬 Fabbiogene", "Fabbio è nel tuo DNA."),
-    (40000, "🖥️ Siliconabbio", "Sei hardware e spirito."),
-    (41000, "✨ Mirabio", "Ogni azione è un portento."),
-    (42000, "🧿 OcchioNome", "Hai visto l’essenza di Fabbio."),
-    (43000, "🔊 EcoBio", "Le montagne rispondono 'Fabbio'."),
-    (44000, "🔓 Apribio", "Hai sbloccato la parola assoluta."),
-    (45000, "☁️ Nuvolabbio", "Fai piovere Verbo."),
-    (46000, "📡 Radiobio", "Trasmetti solo frequenze sante."),
-    (47000, "🕰️ Eternabbio", "Non verrai dimenticato."),
-    (48000, "📜 Storibio", "Ogni cronologia è tua reliquia."),
-    (49000, "👼 Avatarbio", "Fabbio prende forma in te."),
-    (50000, "🌟 Fabbioddio", "La tua parola è divinità.")
-]
 fabbio_count = int(r.get("fabbio_count") or 0)
 
 def is_bot_sleeping():
@@ -132,68 +77,28 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
         current["count"] += count
         current["username"] = username
         unlocked = set(current.get("unlocked", []))
-        for threshold, title, desc in []:
+        for threshold, title, desc in ACHIEVEMENTS:
             if current["count"] >= threshold and str(threshold) not in unlocked:
                 unlocked.add(str(threshold))
-                await update.message.reply_text(f"\U0001f3c6 *{title}* — {desc}", parse_mode="Markdown")
+                await update.message.reply_text(f"🏆 *{title}* — {desc}", parse_mode="Markdown")
         current["unlocked"] = list(unlocked)
         r.set(f"user:{user_id}", json.dumps(current))
 
 async def show_stats(update: Update, context: ContextTypes.DEFAULT_TYPE):
     count = int(r.get("fabbio_count") or 0)
-    await update.message.reply_text(f"\U0001f4ca Abbiamo scritto {count} volte Fabbio. Fabbio ti amiamo.")
+    await update.message.reply_text(f"📊 Abbiamo scritto {count} volte Fabbio. Fabbio ti amiamo.")
 
-async def show_top(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    all_keys = r.keys("user:*")
-    users = []
-    for key in all_keys:
-        data = json.loads(r.get(key))
-        users.append((data.get("username", "Sconosciuto"), data.get("count", 0)))
-    top_users = sorted(users, key=lambda x: x[1], reverse=True)[:10]
-    leaderboard = "\n".join([f"{i+1}. {u[0]} — {u[1]} Fabbii" for i, u in enumerate(top_users)])
-    await update.message.reply_text(f"\U0001f3c6 *Top 10 Evocatori del Verbo di Fabbio:*\n{leaderboard}", parse_mode="Markdown")
-
-async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text(
-        "/stats – Classifica generale\n"
-        "/top – I primi 10 evocatori\n"
-        "/me – I tuoi Fabbii\n"
-        "/achievements – I tuoi traguardi\n"
-        "/fabbioquiz – Quiz sacro\n"
-        "/sacrifico – Offri 100 Fabbii\n"
-        "/evangelizza @utente – Diffondi il Nome"
-    )
-
-async def show_me(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    user_id = str(update.effective_user.id)
-    data = json.loads(r.get(f"user:{user_id}") or json.dumps({"count": 0, "username": "Sconosciuto"}))
-    username = data.get("username", "Sconosciuto")
-    count = data.get("count", 0)
-    await update.message.reply_text(f"\U0001f464 {username}, hai scritto 'Fabbio' {count} volte.")
-
-async def fabbioquiz(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    q = random.choice(QUIZ)
-    options = "\n".join([f"- {opt}" for opt in q["options"]])
-    await update.message.reply_text(f"{q['question']}\n{options}", parse_mode="Markdown")
-
-async def evangelizza(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    if not context.args:
-        await update.message.reply_text("Evangelizza chi? Scrivi /evangelizza @utente")
-        return
-    target = context.args[0]
-    frase = random.choice(EVANGELI)
-    await update.message.reply_text(f"{target} {frase}", parse_mode="Markdown")
-
-async def sacrifico(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    user_id = str(update.effective_user.id)
-    data = json.loads(r.get(f"user:{user_id}") or json.dumps({"count": 0}))
-    if data["count"] < 100:
-        await update.message.reply_text("Non hai abbastanza Fabbii per un sacrificio (min. 100).")
-        return
-    data["count"] -= 100
-    r.set(f"user:{user_id}", json.dumps(data))
-    insulto = random.choice(INSULTI_SACRIFICIO)
-    await update.message.reply_text(f"Hai sacrificato 100 Fabbii. Bravo {insulto}.")
+async def telegram_webhook_handler(request):
+    print("✅ Richiesta webhook ricevuta")
+    try:
+        data = await request.json()
+        print("📩 Update ricevuto:", data)
+        update = Update.de_json(data, app.bot)
+        await app.update_queue.put(update)
+        return web.Response(text="OK")
+    except Exception as e:
+        print("❌ Errore nel webhook:", str(e))
+        return web.Response(status=500, text="Errore nel webhook")
 
 async def main():
     logging.basicConfig(level=logging.INFO)
@@ -202,25 +107,11 @@ async def main():
 
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
     app.add_handler(CommandHandler("stats", show_stats))
-    app.add_handler(CommandHandler("top", show_top))
-    app.add_handler(CommandHandler("me", show_me))
-    app.add_handler(CommandHandler("achievements", help_command))
-    app.add_handler(CommandHandler("fabbioquiz", fabbioquiz))
-    app.add_handler(CommandHandler("evangelizza", evangelizza))
-    app.add_handler(CommandHandler("sacrifico", sacrifico))
-    app.add_handler(CommandHandler("help", help_command))
 
-    async def telegram_webhook_handler(request):
-        print("✅ Ricevuta richiesta webhook")
-        try:
-            data = await request.json()
-            print("📩 Contenuto update:", data)
-            update = Update.de_json(data, app.bot)
-            await app.update_queue.put(update)
-            return web.Response(text="OK")
-        except Exception as e:
-            print("❌ Errore nel webhook:", str(e))
-            return web.Response(status=500, text="Errore nel webhook")
+    await app.initialize()
+    await app.bot.delete_webhook(drop_pending_updates=True)
+    await app.bot.set_webhook(url=f"{DOMAIN}{WEBHOOK_PATH}")
+    await app.start()
 
     web_app = web.Application()
     web_app.add_routes([web.post(WEBHOOK_PATH, telegram_webhook_handler)])
@@ -230,12 +121,6 @@ async def main():
     await site.start()
 
     print(f"🌐 Webhook attivo su {DOMAIN}{WEBHOOK_PATH}")
-
-    await app.initialize()
-    await app.bot.delete_webhook(drop_pending_updates=True)
-    await app.bot.set_webhook(url=f"{DOMAIN}{WEBHOOK_PATH}")
-    await app.start()
-
     while True:
         await asyncio.sleep(3600)
 
