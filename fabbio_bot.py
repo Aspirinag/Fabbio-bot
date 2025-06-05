@@ -4,12 +4,16 @@ import json
 import random
 from datetime import datetime
 import redis
-from telegram import Update, Bot
+import asyncio
+from telegram import Update
 from telegram.ext import Application, CommandHandler, MessageHandler, ContextTypes, filters
 
 BOT_TOKEN = os.environ.get("BOT_TOKEN")
 REDIS_URL = os.environ.get("REDIS_URL")
 ADMIN_CHAT_ID = os.environ.get("ADMIN_CHAT_ID")
+DOMAIN = os.environ.get("DOMAIN")  # es: https://tuo-bot.up.railway.app
+WEBHOOK_PATH = "/webhook"
+PORT = int(os.environ.get("PORT", 8000))
 ADMIN_IDS = [int(ADMIN_CHAT_ID)] if ADMIN_CHAT_ID else []
 
 r = redis.Redis.from_url(REDIS_URL, decode_responses=True)
@@ -45,6 +49,7 @@ INSULTI_SACRIFICIO = [
     "Coglione", "Inutile", "Bifolco del verbo", "Scarto sacro",
     "Eresiarca", "Discepolo zoppo", "Verboschiavo", "Moccioso del culto"
 ]
+
 
 ACHIEVEMENTS = [
     (1000, "🌱 Novabbio", "Hai sussurrato il Nome per la prima volta."),
@@ -106,98 +111,100 @@ def is_bot_sleeping():
     minute = now.minute
     return (hour == 0 and minute >= 40) or (0 < hour < 8)
 
-def main():
+async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    global fabbio_count
+    if not update.message or not update.message.text:
+        return
+
+    text = update.message.text.lower()
+    count = sum(text.count(alias) for alias in ALIASES)
+
+    if count > 0:
+        if is_bot_sleeping():
+            await update.message.reply_text("😴 Fabbio dorme tra le 00:40 e le 08. I 'Fabbio' scritti ora non saranno conteggiati. Zzz...")
+            return
+
+        fabbio_count += count
+        r.set("fabbio_count", fabbio_count)
+
+        user_id = str(update.effective_user.id)
+        username = update.effective_user.username or update.effective_user.first_name or "Sconosciuto"
+        current = json.loads(r.get(f"user:{user_id}") or json.dumps({"count": 0, "username": username, "unlocked": []}))
+        current["count"] += count
+        current["username"] = username
+        unlocked = set(current.get("unlocked", []))
+
+        for threshold, title, desc in ACHIEVEMENTS:
+            if current["count"] >= threshold and str(threshold) not in unlocked:
+                unlocked.add(str(threshold))
+                await update.message.reply_text(f"🏆 *{title}* — {desc}", parse_mode="Markdown")
+
+        current["unlocked"] = list(unlocked)
+        r.set(f"user:{user_id}", json.dumps(current))
+
+async def show_stats(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    count = int(r.get("fabbio_count") or 0)
+    await update.message.reply_text(f"📊 Abbiamo scritto {count} volte Fabbio. Fabbio ti amiamo.")
+
+async def show_top(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    all_keys = r.keys("user:*")
+    users = []
+    for key in all_keys:
+        data = json.loads(r.get(key))
+        users.append((data.get("username", "Sconosciuto"), data.get("count", 0)))
+
+    top_users = sorted(users, key=lambda x: x[1], reverse=True)[:10]
+    leaderboard = "\n".join([f"{i+1}. {u[0]} — {u[1]} Fabbii" for i, u in enumerate(top_users)])
+    await update.message.reply_text(f"🏆 *Top 10 Evocatori del Verbo di Fabbio:*\n{leaderboard}", parse_mode="Markdown")
+
+async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    await update.message.reply_text(
+        "/stats – Classifica generale\n"
+        "/top – I primi 10 evocatori\n"
+        "/me – I tuoi Fabbii\n"
+        "/achievements – I tuoi traguardi\n"
+        "/fabbioquiz – Quiz sacro\n"
+        "/sacrifico – Offri 100 Fabbii\n"
+        "/evangelizza @utente – Diffondi il Nome"
+    )
+
+async def show_me(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    user_id = str(update.effective_user.id)
+    data = json.loads(r.get(f"user:{user_id}") or json.dumps({"count": 0, "username": "Sconosciuto"}))
+    username = data.get("username", "Sconosciuto")
+    count = data.get("count", 0)
+    await update.message.reply_text(f"👤 {username}, hai scritto 'Fabbio' {count} volte.")
+
+async def fabbioquiz(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    q = random.choice(QUIZ)
+    options = "\n".join([f"- {opt}" for opt in q["options"]])
+    await update.message.reply_text(f"{q['question']}\n{options}", parse_mode="Markdown")
+
+async def evangelizza(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if not context.args:
+        await update.message.reply_text("Evangelizza chi? Scrivi /evangelizza @utente")
+        return
+    target = context.args[0]
+    frase = random.choice(EVANGELI)
+    await update.message.reply_text(f"{target} {frase}", parse_mode="Markdown")
+
+async def sacrifico(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    user_id = str(update.effective_user.id)
+    data = json.loads(r.get(f"user:{user_id}") or json.dumps({"count": 0}))
+    if data["count"] < 100:
+        await update.message.reply_text("Non hai abbastanza Fabbii per un sacrificio (min. 100).")
+        return
+    data["count"] -= 100
+    r.set(f"user:{user_id}", json.dumps(data))
+    insulto = random.choice(INSULTI_SACRIFICIO)
+    await update.message.reply_text(f"Hai sacrificato 100 Fabbii. Bravo {insulto}.")
+
+async def main():
     logging.basicConfig(level=logging.INFO)
     app = Application.builder().token(BOT_TOKEN).build()
 
-    async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
-        global fabbio_count
-        if not update.message or not update.message.text:
-            return
-
-        text = update.message.text.lower()
-        count = sum(text.count(alias) for alias in ALIASES)
-
-        if count > 0:
-            if is_bot_sleeping():
-                await update.message.reply_text("😴 Fabbio dorme tra le 00:40 e le 08. I 'Fabbio' scritti ora non saranno conteggiati. Zzz...")
-                return
-
-            fabbio_count += count
-            r.set("fabbio_count", fabbio_count)
-
-            user_id = str(update.effective_user.id)
-            username = update.effective_user.username or update.effective_user.first_name or "Sconosciuto"
-            current = json.loads(r.get(f"user:{user_id}") or json.dumps({"count": 0, "username": username, "unlocked": []}))
-            current["count"] += count
-            current["username"] = username
-            unlocked = set(current.get("unlocked", []))
-
-            for threshold, title, desc in ACHIEVEMENTS:
-                if current["count"] >= threshold and str(threshold) not in unlocked:
-                    unlocked.add(str(threshold))
-                    await update.message.reply_text(f"🏆 *{title}* — {desc}", parse_mode="Markdown")
-
-            current["unlocked"] = list(unlocked)
-            r.set(f"user:{user_id}", json.dumps(current))
-
-    async def show_stats(update: Update, context: ContextTypes.DEFAULT_TYPE):
-        count = int(r.get("fabbio_count") or 0)
-        await update.message.reply_text(f"📊 Abbiamo scritto {count} volte Fabbio. Fabbio ti amiamo.")
-
-    async def show_top(update: Update, context: ContextTypes.DEFAULT_TYPE):
-        all_keys = r.keys("user:*")
-        users = []
-        for key in all_keys:
-            data = json.loads(r.get(key))
-            users.append((data.get("username", "Sconosciuto"), data.get("count", 0)))
-
-        top_users = sorted(users, key=lambda x: x[1], reverse=True)[:10]
-        leaderboard = "\n".join([f"{i+1}. {u[0]} — {u[1]} Fabbii" for i, u in enumerate(top_users)])
-
-        await update.message.reply_text(f"🏆 *Top 10 Evocatori del Verbo di Fabbio:*\n{leaderboard}", parse_mode="Markdown")
-
-    async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
-        await update.message.reply_text(
-            "/stats – Classifica generale\n"
-            "/top – I primi 10 evocatori\n"
-            "/me – I tuoi Fabbii\n"
-            "/achievements – I tuoi traguardi\n"
-            "/fabbioquiz – Quiz sacro\n"
-            "/sacrifico – Offri 100 Fabbii\n"
-            "/evangelizza @utente – Diffondi il Nome"
-        )
-
-    async def show_me(update: Update, context: ContextTypes.DEFAULT_TYPE):
-        user_id = str(update.effective_user.id)
-        data = json.loads(r.get(f"user:{user_id}") or json.dumps({"count": 0, "username": "Sconosciuto"}))
-        username = data.get("username", "Sconosciuto")
-        count = data.get("count", 0)
-        await update.message.reply_text(f"👤 {username}, hai scritto 'Fabbio' {count} volte.")
-
-    async def fabbioquiz(update: Update, context: ContextTypes.DEFAULT_TYPE):
-        q = random.choice(QUIZ)
-        options = "\n".join([f"- {opt}" for opt in q["options"]])
-        await update.message.reply_text(f"{q['question']}\n{options}", parse_mode="Markdown")
-
-    async def evangelizza(update: Update, context: ContextTypes.DEFAULT_TYPE):
-        if not context.args:
-            await update.message.reply_text("Evangelizza chi? Scrivi /evangelizza @utente")
-            return
-        target = context.args[0]
-        frase = random.choice(EVANGELI)
-        await update.message.reply_text(f"{target} {frase}", parse_mode="Markdown")
-
-    async def sacrifico(update: Update, context: ContextTypes.DEFAULT_TYPE):
-        user_id = str(update.effective_user.id)
-        data = json.loads(r.get(f"user:{user_id}") or json.dumps({"count": 0}))
-        if data["count"] < 100:
-            await update.message.reply_text("Non hai abbastanza Fabbii per un sacrificio (min. 100).")
-            return
-        data["count"] -= 100
-        r.set(f"user:{user_id}", json.dumps(data))
-        insulto = random.choice(INSULTI_SACRIFICIO)
-        await update.message.reply_text(f"Hai sacrificato 100 Fabbii. Bravo {insulto}.")
+    await app.bot.delete_webhook(drop_pending_updates=True)
+    await app.bot.set_webhook(url=f"{DOMAIN}{WEBHOOK_PATH}")
 
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
     app.add_handler(CommandHandler("stats", show_stats))
@@ -209,7 +216,13 @@ def main():
     app.add_handler(CommandHandler("sacrifico", sacrifico))
     app.add_handler(CommandHandler("help", help_command))
 
-    app.run_polling()
+    await app.run_webhook(
+        listen="0.0.0.0",
+        port=PORT,
+        webhook_path=WEBHOOK_PATH,
+        allowed_updates=Update.ALL_TYPES,
+        stop_signals=None
+    )
 
 if __name__ == "__main__":
-    main()
+    asyncio.run(main())
