@@ -216,12 +216,25 @@ async def main():
     app.add_handler(CommandHandler("sacrifico", sacrifico))
     app.add_handler(CommandHandler("help", help_command))
 
-    await app.run_webhook(
-        listen="0.0.0.0",
-        port=PORT,
-        webhook_url=f"{DOMAIN}{WEBHOOK_PATH}",
-        allowed_updates=Update.ALL_TYPES,
-        stop_signals=None
+    from aiohttp import web
+
+# Crea un'app aiohttp e collega Telegram
+web_app = web.Application()
+web_app.add_routes([
+    web.post(WEBHOOK_PATH, app.webhook_handler)
+])
+
+runner = web.AppRunner(web_app)
+await runner.setup()
+site = web.TCPSite(runner, "0.0.0.0", PORT)
+await site.start()
+
+print(f"🌐 Webhook attivo su {DOMAIN}{WEBHOOK_PATH}")
+
+# Mantieni il bot in esecuzione
+while True:
+    await asyncio.sleep(3600)
+
     )
 
 if __name__ == "__main__":
