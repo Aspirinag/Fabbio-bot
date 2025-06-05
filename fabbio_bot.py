@@ -229,7 +229,12 @@ async def main():
     site = web.TCPSite(runner, "0.0.0.0", PORT)
     await site.start()
 
-    print(f"🌐 Webhook attivo su {DOMAIN}{WEBHOOK_PATH}")
+        print(f"🌐 Webhook attivo su {DOMAIN}{WEBHOOK_PATH}")
 
     while True:
         await asyncio.sleep(3600)
+
+if __name__ == "__main__":
+    import nest_asyncio
+    nest_asyncio.apply()
+    asyncio.run(main())
