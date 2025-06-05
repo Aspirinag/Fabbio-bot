@@ -222,11 +222,18 @@ async def main():
     app.add_handler(CommandHandler("sacrifico", sacrifico))
     app.add_handler(CommandHandler("help", help_command))
 
-    async def telegram_webhook_handler(request):
+ async def telegram_webhook_handler(request):
+    print("✅ Ricevuta richiesta webhook")
+    try:
         data = await request.json()
+        print("📩 Contenuto update:", data)
         update = Update.de_json(data, app.bot)
         await app.update_queue.put(update)
         return web.Response(text="OK")
+    except Exception as e:
+        print("❌ Errore nel webhook:", str(e))
+        return web.Response(status=500, text="Errore nel webhook")
+
 
     web_app = web.Application()
     web_app.add_routes([
