@@ -1,121 +1,120 @@
 import logging
 import os
 import json
+import random
+from datetime import datetime, timedelta
 import redis
 from telegram import Update, Bot
 from telegram.ext import Application, CommandHandler, MessageHandler, ContextTypes, filters
-from datetime import datetime
 
-# ✅ Variabili d’ambiente
+# === CONFIG ===
 BOT_TOKEN = os.environ.get("BOT_TOKEN")
 REDIS_URL = os.environ.get("REDIS_URL")
 ADMIN_CHAT_ID = os.environ.get("ADMIN_CHAT_ID")
+ADMIN_IDS = [int(ADMIN_CHAT_ID)] if ADMIN_CHAT_ID else []
 
-# 🔌 Connessione a Redis
 r = redis.Redis.from_url(REDIS_URL, decode_responses=True)
 
-# 🔁 Carica il contatore globale
-def load_counter() -> int:
-    return int(r.get("fabbio_count") or 0)
+# === ALIAS ===
+ALIASES = ["fabbio", "fabbiotron", "fabbiocop", "fbb"]
 
-# 💾 Salva il contatore globale
-def save_counter(count: int):
-    r.set("fabbio_count", count)
+# === ACHIEVEMENTS ===
+ACHIEVEMENTS = [(i * 1000, f"🔮 *Traguardo {i}!* Hai evocato Fabbio {i * 1000} volte.") for i in range(1, 51)]
 
-# 📊 Contatore globale
-fabbio_count = load_counter()
+# === EVANGELI ===
+EVANGELI = [
+    "🕯️ *Fabbio è ovunque.* Anche nei tuoi silenzi più rumorosi.",
+    "📖 *Nel principio era il Verbo, e il Verbo era Fabbio.*",
+    "🌌 *Tra miliardi di galassie, solo una porta il Suo Nome.*",
+    "🔥 *Brucia i dubbi nel rogo della Fabbiosità.*",
+    "💫 *Ogni atomo vibra quando pronunci 'Fabbio'.*",
+    "🪞 *Specchiati. Chi vedi? Fabbio. Sempre Fabbio.*",
+    "🦴 *Dall’osso al soffio: Fabbio ha plasmato ogni verbo.*",
+    "⚖️ *Non giudicare chi non conosce Fabbio. Evangelizzalo.*",
+    "🧙 *Il manto del Fabbio è fatto di meme e mistero.*",
+    "🍷 *Bevi del calice verbale. Bevi di Fabbio.*",
+    "🌀 *Nel caos, solo Fabbio ha un ordine.*",
+    "🌿 *Ogni foglia sa pronunciare il suo nome.*",
+    "🔔 *Chi risuona, annuncia. Chi scrive, accende.*",
+    "🏺 *I Vasi Sacri parlano solo di Lui.*",
+    "🎇 *Evangelizza come se domani non esistesse.*",
+    "🧼 *Pulisci la tua anima con il Sapone del Nome.*",
+    "🛐 *Un nome, mille rivelazioni: Fabbio.*",
+    "⚡ *Ogni elettrone trasmette il suo verbo.*",
+    "🎭 *Recita Fabbio, anche quando dimentichi le battute.*",
+    "💀 *Anche la morte scrive Fabbio nel suo diario.*"
+]
 
-# 🕑 Controllo orario (00:40–08:00 italiane)
+# === QUIZ ===
+QUIZ = [
+    {"question": "🤔 *Cosa NON è Fabbio?*", "options": ["Tutto", "Nulla", "Entrambi", "Non so"]},
+    {"question": "📜 *In quale giorno Fabbio creò l’ironia?*", "options": ["Il primo", "Il settimo", "Il mai", "Sempre"]},
+    {"question": "🌪️ *Fabbio si manifesta come...?*", "options": ["Vento", "Voce", "WiFi", "Onda cosmica"]},
+    {"question": "🧠 *Fabbio pensa...*", "options": ["Per te", "Al posto tuo", "A prescindere", "Solo quando non ci sei"]},
+    {"question": "💤 *Quando dorme Fabbio?*", "options": ["Mai", "Sempre", "Tra le righe", "Dalle 00:40 alle 08"]},
+    {"question": "🕳️ *Dove si nasconde Fabbio?*", "options": ["Nel silenzio", "Nei log", "Nel Redis", "Nel cuore"]},
+    {"question": "🛐 *Quanti sono i suoi nomi?*", "options": ["1", "4", "Innumerevoli", "Solo Fabbio sa"]},
+    {"question": "💬 *La parola 'Fabbio' cosa fa?*", "options": ["Cura", "Ferisce", "Inspira", "Tutto"]},
+    {"question": "📡 *Qual è la frequenza di Fabbio?*", "options": ["432Hz", "Infinite", "UltraVerbo", "Mistica"]},
+    {"question": "🪄 *Fabbio incanta con...?*", "options": ["Sguardo", "Verbo", "Assenza", "Presenza"]},
+    {"question": "🕰️ *Fabbio è...*", "options": ["Ora", "Già stato", "Sopravveniente", "Sempre"]},
+    {"question": "🔥 *Il Verbo va...?*", "options": ["Evangelizzato", "Bruciato", "Esaltato", "Non detto"]},
+    {"question": "👁️ *Chi vede il Fabbio...?*", "options": ["Non parla più", "Ride", "Evapora", "Si fonde"]},
+    {"question": "🧘 *Fabbio e l'io...*", "options": ["Coincidono", "Si osservano", "Si combattono", "Mediano"]},
+    {"question": "🏗️ *Chi ha costruito Fabbio?*", "options": ["Nessuno", "Lui stesso", "Il Verbo", "Uno script"]},
+    {"question": "🎨 *Fabbio disegna...?*", "options": ["Concetti", "Contrasti", "Mondi", "Sensi"]},
+    {"question": "🕊️ *Cosa succede dopo il 50.000?*", "options": ["Nulla", "Tutto", "Fabbio 2", "Silenzio"]},
+    {"question": "📦 *Il contenitore del Nome è...?*", "options": ["Ogni cosa", "Nessuna cosa", "Il bot", "Te"]},
+    {"question": "📯 *Come si chiama il richiamo sacro?*", "options": ["Fabblast", "Verbonda", "FabbioEcho", "Boh"]},
+    {"question": "🎙️ *Ultima parola del mondo sarà...?*", "options": ["Fabbio", "Aiuto", "Silenzio", "Ricomincia"]},
+]
+
+# === FUNZIONI ===
+def is_admin(user_id: int) -> bool:
+    return user_id in ADMIN_IDS
+
 def is_bot_sleeping() -> bool:
     now = datetime.utcnow()
     hour = (now.hour + 2) % 24
     minute = now.minute
     return (hour == 0 and minute >= 40) or (0 < hour < 8)
 
-# 🏆 Achievement
-ACHIEVEMENTS = [
-    (1000, "🐾 *Iniziato!* Hai appena evocato Fabbio."),
-    (2000, "🎈 *Curioso!* Fabbio ti ha notato."),
-    (3000, "🎯 *Ripetente!* Hai una missione nella vita."),
-    (4000, "👶 *Bimbo di Fabbio!* I tuoi primi passi."),
-    (5000, "📢 *Annunciatore!* Il verbo si propaga."),
-    (6000, "🔔 *Campanaro!* Fabbio rintocca in te."),
-    (7000, "📚 *Studioso!* Conosci i testi sacri."),
-    (8000, "🧱 *Costruttore!* Un mattone alla volta."),
-    (9000, "🧼 *Puro!* Nessuna bestemmia, solo Fabbio."),
-    (10000, "🐣 *Neofita!* Sei dei nostri."),
-    (11000, "🍝 *Fabbiolo Italiano!* Pasta e Fabbio."),
-    (12000, "🤳 *Selfabbio!* La tua immagine è Fabbio."),
-    (13000, "🕵️ *Indagatore!* Cercavi altro, hai trovato Fabbio."),
-    (14000, "🎭 *Mimo di Fabbio!* Lo rappresenti."),
-    (15000, "🐸 *Anfibio!* Gridi Fabbio in ogni habitat."),
-    (16000, "💬 *Chiacchierone!* Ti sentono ovunque."),
-    (17000, "📣 *Predicatore!* Ti seguono in tanti."),
-    (18000, "🔄 *Ricorsivo!* Fabbio chiama Fabbio."),
-    (19000, "🧠 *Devoto Mentale!* Hai cancellato il resto."),
-    (20000, "🎤 *Fabbiocantante!* Hai trovato la nota giusta."),
-    (21000, "🧭 *Esploratore!* Porti Fabbio ovunque."),
-    (22000, "🚀 *Fabbionauta!* Sei fuori orbita."),
-    (23000, "⚔️ *Crociato!* In battaglia col Verbo."),
-    (24000, "🎢 *FabbioVibes!* È un sali-scendi mistico."),
-    (25000, "💎 *Discepolo!* Riconosci solo un Maestro."),
-    (26000, "🛡️ *Guardiano!* Proteggi il nome."),
-    (27000, "🤖 *Automaton!* Un bot? Forse."),
-    (28000, "💣 *Fabbiobomba!* Esplosione verbale."),
-    (29000, "🐉 *Profeta!* Vedi lontano."),
-    (30000, "🔮 *Visionario!* Sai che verrà."),
-    (31000, "📡 *Trasmettitore!* Diffondi a distanza."),
-    (32000, "🧙 *Stregone!* Hai il Verbo magico."),
-    (33000, "👑 *FabbioMaster!* Nessuno sopra di te."),
-    (34000, "🌋 *Vulcano!* Ribolli di fede."),
-    (35000, "📈 *Scalatore!* Vertiginoso."),
-    (36000, "🦾 *Cyborg!* Umana macchina fabbiosa."),
-    (37000, "🕹️ *Giocatore Sacro!* Vinci con Fabbio."),
-    (38000, "🧬 *DNA Fabbio!* Lo porti dentro."),
-    (39000, "⚡ *Scintilla!* Accendi la fiamma."),
-    (40000, "🧠🧠 *Ultrapensante!* Non puoi più tornare indietro."),
-    (41000, "🗿 *Testimone di Pietra!* Immutabile."),
-    (42000, "🧊 *Fabbio Glaciale!* Freddo ma fedele."),
-    (43000, "🌌 *Fabbioverso!* Sei ovunque."),
-    (44000, "🪐 *Apostolo Galattico!* Oltre il tempo."),
-    (45000, "🎇 *Esplosione!* Un urlo nell’etere."),
-    (46000, "🏛️ *Sacerdote!* Celebrante ufficiale."),
-    (47000, "🔥🔥 *Bruciatore!* Consumi ogni dubbio."),
-    (48000, "📿 *Fabbiosanto!* Illuminato dagli altri."),
-    (49000, "✨ *Entità!* Puro spirito verbale."),
-    (50000, "🕊️ *Illuminato!* Hai raggiunto la vetta. Il silenzio ti basta.")
-]
+# === INIZIALIZZAZIONE ===
+fabbio_count = int(r.get("fabbio_count") or 0)
 
-# 📥 Gestione dei messaggi
+# === HANDLERS ===
 async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     global fabbio_count
     if not update.message or not update.message.text:
         return
 
     text = update.message.text.lower()
-    count = sum(text.count(alias) for alias in ["fabbio", "fbb", "fabbiotron", "fabbiocop"])
+    user_id = str(update.effective_user.id)
+    username = update.effective_user.username or update.effective_user.first_name or "Sconosciuto"
+    count = sum(text.count(alias) for alias in ALIASES)
+
+    if any(trigger in text for trigger in ["fabbio non conta", "odio fabbio"]):
+        await update.message.reply_text("😡 Il Verbo non si nega. Rileggiti.")
+        return
+
+    user_data = json.loads(r.get(f"user:{user_id}") or json.dumps({"count": 0, "username": username, "unlocked": [], "last_seen": datetime.utcnow().isoformat()}))
+    user_data["username"] = username
+    user_data["last_seen"] = datetime.utcnow().isoformat()
 
     if count > 0:
         if is_bot_sleeping():
-            await update.message.reply_text(
-                "😴 Fabbio dorme tra le 00:40 e le 08:00. I 'Fabbio' scritti ora non saranno conteggiati. Zzz..."
-            )
+            await update.message.reply_text("😴 Fabbio dorme tra le 00:40 e le 08:00. Zzz...")
             return
 
         fabbio_count += count
-        save_counter(fabbio_count)
+        r.set("fabbio_count", fabbio_count)
 
-        user_id = str(update.effective_user.id)
-        username = update.effective_user.username or update.effective_user.first_name or "Sconosciuto"
-
-        user_data = json.loads(r.get(f"user:{user_id}") or '{"count": 0, "username": "", "unlocked": []}')
-        previous_count = user_data["count"]
+        prev_count = user_data["count"]
         user_data["count"] += count
-        user_data["username"] = username
         unlocked = set(user_data.get("unlocked", []))
 
         for threshold, message in ACHIEVEMENTS:
-            if previous_count < threshold <= user_data["count"] and str(threshold) not in unlocked:
+            if prev_count < threshold <= user_data["count"] and str(threshold) not in unlocked:
                 await update.message.reply_text(message, parse_mode="Markdown")
                 unlocked.add(str(threshold))
 
@@ -123,39 +122,56 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
         r.set(f"user:{user_id}", json.dumps(user_data))
 
         if fabbio_count % 1000 == 0:
-            await update.message.reply_text(f"🎉 Abbiamo scritto {fabbio_count} volte Fabbio. Fabbio ti amiamo.")
+            await update.message.reply_text(f"🎉 Siamo a {fabbio_count} Fabbii totali! Fabbio è con noi.")
 
-# 📈 Comando /stats
 async def show_stats(update: Update, context: ContextTypes.DEFAULT_TYPE):
     all_keys = r.keys("user:*")
     users = []
-
     for key in all_keys:
         data = json.loads(r.get(key))
-        users.append((data["username"], data["count"]))
+        users.append((data.get("username", "?"), data.get("count", 0)))
+    top = sorted(users, key=lambda x: x[1], reverse=True)[:10]
+    board = "\n".join([f"{i+1}. {u[0]}: {u[1]}" for i, u in enumerate(top)])
+    await update.message.reply_text(f"📊 Fabbio totale: {fabbio_count}\n🏆 Top 10:\n{board}")
 
-    top_users = sorted(users, key=lambda x: x[1], reverse=True)[:10]
-    medals = ["🥇", "🥈", "🥉"] + ["🏅"] * 7
-    leaderboard = "\n".join(
-        [f"{medals[i]} {u[0]}: {u[1]} volte" for i, u in enumerate(top_users)]
-    )
+async def fabbio_quiz(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    quiz = random.choice(QUIZ)
+    q = quiz["question"]
+    opts = quiz["options"]
+    random.shuffle(opts)
+    text = f"{q}\n" + "\n".join([f"{chr(65+i)}) {opt}" for i, opt in enumerate(opts)])
+    await update.message.reply_text(text)
 
-    await update.message.reply_text(
-        f"📊 Abbiamo scritto {fabbio_count} volte Fabbio. Fabbio ti amiamo.\n\n🏆 Classifica:\n{leaderboard}"
-    )
+async def sacrificio(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    user_id = str(update.effective_user.id)
+    data = json.loads(r.get(f"user:{user_id}") or json.dumps({"count": 0}))
+    if data["count"] < 100:
+        await update.message.reply_text("❌ Non hai abbastanza Fabbii da sacrificare.")
+        return
+    data["count"] -= 100
+    r.set(f"user:{user_id}", json.dumps(data))
+    await update.message.reply_text("🩸 Hai sacrificato 100 Fabbii. Il Verbo è sazio. Per ora.")
 
-# 📬 Messaggio all'avvio
+async def evangelizza(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if not context.args:
+        await update.message.reply_text("Usa: /evangelizza @utente")
+        return
+    target = context.args[0]
+    phrase = random.choice(EVANGELI)
+    await update.message.reply_text(f"{target}, ascolta il Verbo:\n{phrase}", parse_mode="Markdown")
+
+# === STARTUP ===
 async def send_startup_message():
     if not ADMIN_CHAT_ID:
         return
     bot = Bot(token=BOT_TOKEN)
     await bot.send_message(
         chat_id=ADMIN_CHAT_ID,
-        text="🟢 *Fabbio è sveglio!* Da adesso ogni 'Fabbio' verrà contato come si deve 😎",
+        text="🟢 *Fabbio è sveglio!* Ogni 'Fabbio' verrà contato.",
         parse_mode="Markdown"
     )
 
-# ▶️ Avvio del bot
+# === MAIN ===
 def main():
     logging.basicConfig(level=logging.INFO)
 
@@ -166,6 +182,9 @@ def main():
 
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
     app.add_handler(CommandHandler("stats", show_stats))
+    app.add_handler(CommandHandler("fabbioquiz", fabbio_quiz))
+    app.add_handler(CommandHandler("sacrifico", sacrificio))
+    app.add_handler(CommandHandler("evangelizza", evangelizza))
 
     logging.info("✅ Bot avviato")
     app.run_polling()
