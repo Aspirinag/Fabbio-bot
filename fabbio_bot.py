@@ -216,26 +216,24 @@ async def main():
     app.add_handler(CommandHandler("sacrifico", sacrifico))
     app.add_handler(CommandHandler("help", help_command))
 
+    # AIOHTTP – server webhook compatibile Railway
     from aiohttp import web
 
-# Crea un'app aiohttp e collega Telegram
-web_app = web.Application()
-web_app.add_routes([
-    web.post(WEBHOOK_PATH, app.webhook_handler)
-])
+    web_app = web.Application()
+    web_app.add_routes([
+        web.post(WEBHOOK_PATH, app.webhook_handler)
+    ])
 
-runner = web.AppRunner(web_app)
-await runner.setup()
-site = web.TCPSite(runner, "0.0.0.0", PORT)
-await site.start()
+    runner = web.AppRunner(web_app)
+    await runner.setup()
+    site = web.TCPSite(runner, "0.0.0.0", PORT)
+    await site.start()
 
-print(f"🌐 Webhook attivo su {DOMAIN}{WEBHOOK_PATH}")
+    print(f"🌐 Webhook attivo su {DOMAIN}{WEBHOOK_PATH}")
 
-# Mantieni il bot in esecuzione
-while True:
-    await asyncio.sleep(3600)
-
-    )
+    # Mantieni il bot in esecuzione
+    while True:
+        await asyncio.sleep(3600)
 
 if __name__ == "__main__":
     import nest_asyncio
