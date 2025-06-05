@@ -4,8 +4,10 @@ import json
 import random
 from datetime import datetime
 import redis
+from aiohttp import web  # ✅ IMPORTA QUI!
 import asyncio
 import nest_asyncio
+
 from telegram import Update
 from telegram.ext import Application, CommandHandler, MessageHandler, ContextTypes, filters
 
