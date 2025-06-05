@@ -234,8 +234,6 @@ async def main():
             print("❌ Errore nel webhook:", str(e))
             return web.Response(status=500, text="Errore nel webhook")
 
-
-
     web_app = web.Application()
     web_app.add_routes([
         web.post(WEBHOOK_PATH, telegram_webhook_handler)
@@ -249,6 +247,7 @@ async def main():
 
     while True:
         await asyncio.sleep(3600)
+
 if __name__ == "__main__":
     import nest_asyncio
     nest_asyncio.apply()
