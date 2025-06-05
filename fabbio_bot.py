@@ -207,8 +207,10 @@ async def main():
     global app
     app = Application.builder().token(BOT_TOKEN).build()
 
+    await app.initialize()
     await app.bot.delete_webhook(drop_pending_updates=True)
     await app.bot.set_webhook(url=f"{DOMAIN}{WEBHOOK_PATH}")
+    await app.start()
 
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
     app.add_handler(CommandHandler("stats", show_stats))
@@ -230,7 +232,6 @@ async def main():
     web_app.add_routes([
         web.post(WEBHOOK_PATH, telegram_webhook_handler)
     ])
-
     runner = web.AppRunner(web_app)
     await runner.setup()
     site = web.TCPSite(runner, "0.0.0.0", PORT)
@@ -238,13 +239,9 @@ async def main():
 
     print(f"🌐 Webhook attivo su {DOMAIN}{WEBHOOK_PATH}")
 
-    await app.initialize()
-    await app.start()
     while True:
         await asyncio.sleep(3600)
-
 if __name__ == "__main__":
     import nest_asyncio
     nest_asyncio.apply()
     asyncio.run(main())
-
