@@ -118,36 +118,30 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     global fabbio_count
     if not update.message or not update.message.text:
         return
-
     text = update.message.text.lower()
     count = sum(text.count(alias) for alias in ALIASES)
-
     if count > 0:
         if is_bot_sleeping():
             await update.message.reply_text("😴 Fabbio dorme tra le 00:40 e le 08. I 'Fabbio' scritti ora non saranno conteggiati. Zzz...")
             return
-
         fabbio_count += count
         r.set("fabbio_count", fabbio_count)
-
         user_id = str(update.effective_user.id)
         username = update.effective_user.username or update.effective_user.first_name or "Sconosciuto"
         current = json.loads(r.get(f"user:{user_id}") or json.dumps({"count": 0, "username": username, "unlocked": []}))
         current["count"] += count
         current["username"] = username
         unlocked = set(current.get("unlocked", []))
-
-        for threshold, title, desc in ACHIEVEMENTS:
+        for threshold, title, desc in []:
             if current["count"] >= threshold and str(threshold) not in unlocked:
                 unlocked.add(str(threshold))
-                await update.message.reply_text(f"🏆 *{title}* — {desc}", parse_mode="Markdown")
-
+                await update.message.reply_text(f"\U0001f3c6 *{title}* — {desc}", parse_mode="Markdown")
         current["unlocked"] = list(unlocked)
         r.set(f"user:{user_id}", json.dumps(current))
 
 async def show_stats(update: Update, context: ContextTypes.DEFAULT_TYPE):
     count = int(r.get("fabbio_count") or 0)
-    await update.message.reply_text(f"📊 Abbiamo scritto {count} volte Fabbio. Fabbio ti amiamo.")
+    await update.message.reply_text(f"\U0001f4ca Abbiamo scritto {count} volte Fabbio. Fabbio ti amiamo.")
 
 async def show_top(update: Update, context: ContextTypes.DEFAULT_TYPE):
     all_keys = r.keys("user:*")
@@ -155,10 +149,9 @@ async def show_top(update: Update, context: ContextTypes.DEFAULT_TYPE):
     for key in all_keys:
         data = json.loads(r.get(key))
         users.append((data.get("username", "Sconosciuto"), data.get("count", 0)))
-
     top_users = sorted(users, key=lambda x: x[1], reverse=True)[:10]
     leaderboard = "\n".join([f"{i+1}. {u[0]} — {u[1]} Fabbii" for i, u in enumerate(top_users)])
-    await update.message.reply_text(f"🏆 *Top 10 Evocatori del Verbo di Fabbio:*\n{leaderboard}", parse_mode="Markdown")
+    await update.message.reply_text(f"\U0001f3c6 *Top 10 Evocatori del Verbo di Fabbio:*\n{leaderboard}", parse_mode="Markdown")
 
 async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(
@@ -176,7 +169,7 @@ async def show_me(update: Update, context: ContextTypes.DEFAULT_TYPE):
     data = json.loads(r.get(f"user:{user_id}") or json.dumps({"count": 0, "username": "Sconosciuto"}))
     username = data.get("username", "Sconosciuto")
     count = data.get("count", 0)
-    await update.message.reply_text(f"👤 {username}, hai scritto 'Fabbio' {count} volte.")
+    await update.message.reply_text(f"\U0001f464 {username}, hai scritto 'Fabbio' {count} volte.")
 
 async def fabbioquiz(update: Update, context: ContextTypes.DEFAULT_TYPE):
     q = random.choice(QUIZ)
@@ -207,11 +200,6 @@ async def main():
     global app
     app = Application.builder().token(BOT_TOKEN).build()
 
-    await app.initialize()
-    await app.bot.delete_webhook(drop_pending_updates=True)
-    await app.bot.set_webhook(url=f"{DOMAIN}{WEBHOOK_PATH}")
-    await app.start()
-
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
     app.add_handler(CommandHandler("stats", show_stats))
     app.add_handler(CommandHandler("top", show_top))
@@ -235,9 +223,7 @@ async def main():
             return web.Response(status=500, text="Errore nel webhook")
 
     web_app = web.Application()
-    web_app.add_routes([
-        web.post(WEBHOOK_PATH, telegram_webhook_handler)
-    ])
+    web_app.add_routes([web.post(WEBHOOK_PATH, telegram_webhook_handler)])
     runner = web.AppRunner(web_app)
     await runner.setup()
     site = web.TCPSite(runner, "0.0.0.0", PORT)
@@ -245,5 +231,14 @@ async def main():
 
     print(f"🌐 Webhook attivo su {DOMAIN}{WEBHOOK_PATH}")
 
+    await app.initialize()
+    await app.bot.delete_webhook(drop_pending_updates=True)
+    await app.bot.set_webhook(url=f"{DOMAIN}{WEBHOOK_PATH}")
+    await app.start()
+
     while True:
         await asyncio.sleep(3600)
+
+if __name__ == "__main__":
+    nest_asyncio.apply()
+    asyncio.run(main())
