@@ -144,14 +144,38 @@ def main():
         count = data.get("count", 0)
         await update.message.reply_text(f"👤 {username}, hai scritto 'Fabbio' {count} volte.")
 
+    async def fabbioquiz(update: Update, context: ContextTypes.DEFAULT_TYPE):
+        q = random.choice(QUIZ)
+        options = "\n".join([f"- {opt}" for opt in q["options"]])
+        await update.message.reply_text(f"{q['question']}\n{options}", parse_mode="Markdown")
+
+    async def evangelizza(update: Update, context: ContextTypes.DEFAULT_TYPE):
+        if not context.args:
+            await update.message.reply_text("Evangelizza chi? Scrivi /evangelizza @utente")
+            return
+        target = context.args[0]
+        frase = random.choice(EVANGELI)
+        await update.message.reply_text(f"{target} {frase}", parse_mode="Markdown")
+
+    async def sacrifico(update: Update, context: ContextTypes.DEFAULT_TYPE):
+        user_id = str(update.effective_user.id)
+        data = json.loads(r.get(f"user:{user_id}") or json.dumps({"count": 0}))
+        if data["count"] < 100:
+            await update.message.reply_text("Non hai abbastanza Fabbii per un sacrificio (min. 100).")
+            return
+        data["count"] -= 100
+        r.set(f"user:{user_id}", json.dumps(data))
+        insulto = random.choice(INSULTI_SACRIFICIO)
+        await update.message.reply_text(f"Hai sacrificato 100 Fabbii. Bravo {insulto}.")
+
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
     app.add_handler(CommandHandler("stats", show_stats))
     app.add_handler(CommandHandler("top", show_top))
     app.add_handler(CommandHandler("me", show_me))
-    app.add_handler(CommandHandler("achievements", lambda u, c: None))
-    app.add_handler(CommandHandler("fabbioquiz", lambda u, c: None))
-    app.add_handler(CommandHandler("evangelizza", lambda u, c: None))
-    app.add_handler(CommandHandler("sacrifico", lambda u, c: None))
+    app.add_handler(CommandHandler("achievements", help_command))
+    app.add_handler(CommandHandler("fabbioquiz", fabbioquiz))
+    app.add_handler(CommandHandler("evangelizza", evangelizza))
+    app.add_handler(CommandHandler("sacrifico", sacrifico))
     app.add_handler(CommandHandler("help", help_command))
 
     app.run_polling()
