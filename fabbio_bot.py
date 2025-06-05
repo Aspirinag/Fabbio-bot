@@ -203,10 +203,8 @@ async def sacrifico(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(f"Hai sacrificato 100 Fabbii. Bravo {insulto}.")
 
 async def main():
-    import logging
-    from aiohttp import web
-
     logging.basicConfig(level=logging.INFO)
+    global app
     app = Application.builder().token(BOT_TOKEN).build()
 
     await app.bot.delete_webhook(drop_pending_updates=True)
@@ -222,10 +220,15 @@ async def main():
     app.add_handler(CommandHandler("sacrifico", sacrifico))
     app.add_handler(CommandHandler("help", help_command))
 
-    # ✅ Usa app.as_handler(), NON app.request_handler
+    async def telegram_webhook_handler(request):
+        data = await request.json()
+        update = Update.de_json(data, app.bot)
+        await app.update_queue.put(update)
+        return web.Response(text="OK")
+
     web_app = web.Application()
     web_app.add_routes([
-        web.post(WEBHOOK_PATH, app.as_handler())
+        web.post(WEBHOOK_PATH, telegram_webhook_handler)
     ])
 
     runner = web.AppRunner(web_app)
@@ -235,9 +238,10 @@ async def main():
 
     print(f"🌐 Webhook attivo su {DOMAIN}{WEBHOOK_PATH}")
 
+    await app.initialize()
+    await app.start()
     while True:
         await asyncio.sleep(3600)
-
 
 if __name__ == "__main__":
     import nest_asyncio
