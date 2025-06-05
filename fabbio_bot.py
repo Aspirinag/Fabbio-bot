@@ -5,6 +5,7 @@ import random
 from datetime import datetime
 import redis
 import asyncio
+import nest_asyncio
 from telegram import Update
 from telegram.ext import Application, CommandHandler, MessageHandler, ContextTypes, filters
 
