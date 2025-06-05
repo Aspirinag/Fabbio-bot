@@ -1,12 +1,3 @@
-import logging
-import os
-import json
-import random
-from datetime import datetime
-import redis
-from telegram import Update, Bot
-from telegram.ext import Application, CommandHandler, MessageHandler, ContextTypes, filters
-
 BOT_TOKEN = os.environ.get("BOT_TOKEN")
 REDIS_URL = os.environ.get("REDIS_URL")
 ADMIN_CHAT_ID = os.environ.get("ADMIN_CHAT_ID")
@@ -20,11 +11,11 @@ QUIZ = [
     {"question": "📜 *In quale giorno Fabbio creò l’ironia?*", "options": ["Il primo", "Il settimo", "Il mai", "Sempre"]},
     {"question": "🌪️ *Fabbio si manifesta come...?*", "options": ["Vento", "Voce", "WiFi", "Onda cosmica"]},
     {"question": "🧠 *Fabbio pensa...?*", "options": ["Per te", "Al posto tuo", "A prescindere", "Solo quando non ci sei"]},
-    {"question": "💤 *Quando dorme Fabbio?*", "options": ["Mai", "Sempre", "Tra le righe", "Dalle 00:40 alle 08"]},
+    {"question": "🛌 *Quando dorme Fabbio?*", "options": ["Mai", "Sempre", "Tra le righe", "Dalle 00:40 alle 08"]},
     {"question": "🕳️ *Dove si nasconde Fabbio?*", "options": ["Nel silenzio", "Nei log", "Nel Redis", "Nel cuore"]},
-    {"question": "🛐 *Quanti sono i suoi nomi?*", "options": ["1", "4", "Innumerevoli", "Solo Fabbio sa"]},
+    {"question": "🚖 *Quanti sono i suoi nomi?*", "options": ["1", "4", "Innumerevoli", "Solo Fabbio sa"]},
     {"question": "💬 *La parola 'Fabbio' cosa fa?*", "options": ["Cura", "Ferisce", "Inspira", "Tutto"]},
-    {"question": "📡 *Qual è la frequenza di Fabbio?*", "options": ["432Hz", "Infinite", "UltraVerbo", "Mistica"]},
+    {"question": "📱 *Qual è la frequenza di Fabbio?*", "options": ["432Hz", "Infinite", "UltraVerbo", "Mistica"]},
     {"question": "🪄 *Fabbio incanta con...?*", "options": ["Sguardo", "Verbo", "Assenza", "Presenza"]}
 ]
 
@@ -47,8 +38,58 @@ INSULTI_SACRIFICIO = [
 ]
 
 ACHIEVEMENTS = [
-    (i * 1000, f"Titolo {i}", f"🏆 Hai raggiunto {i * 1000} evocazioni di Fabbio.") for i in range(1, 51)
+    (1000, "🌱 Novabbio", "Hai sussurrato il Nome per la prima volta."),
+    (2000, "🔥 Fabbiosauro", "Hai urlato Fabbio oltre l’eco della valle."),
+    (3000, "💪 Fabbricatore", "Hai scolpito 3000 Fabbii nella roccia digitale."),
+    (4000, "🧔 Barbabio", "Ogni pelo della tua barba dice 'Fabbio'."),
+    (5000, "🗯️ Bestebbio", "Hai bestemmiato Fabbio col cuore puro."),
+    (6000, "🚀 Astronabbio", "Hai portato il verbo in orbita."),
+    (7000, "📚 Fabbioteca", "Conservi ogni invocazione in pergamene mistiche."),
+    (8000, "👽 MetaFabbio", "Sei oltre il concetto stesso di Fabbio."),
+    (9000, "🌊 TsuFabbio", "Hai annegato il mondo nel verbo."),
+    (10000, "✋ Palmobio", "Hai toccato il verbo con dita sacre."),
+    (11000, "🧙‍♂️ Fabbiomante", "Predici il futuro evocando Fabbio."),
+    (12000, "🕯️ Candabbio", "La tua fiamma interiore è verbosa."),
+    (13000, "📖 BibbiaFab", "Scrivi il nuovo testamento Fabbioso."),
+    (14000, "🪵 TroncoVerbo", "Pianti alberi di parola."),
+    (15000, "💨 Sbuffabbio", "Ogni sospiro è un Fabbio."),
+    (16000, "🙌 Fabbionico", "Le tue mani fanno solo miracoli verbali."),
+    (17000, "🌑 Eclissabbio", "Offuschi il sole con la Fabbiosità."),
+    (18000, "⌨️ TastoDivino", "Ogni tasto è consacrato."),
+    (19000, "📜 Scrollabbio", "Le tue pergamene fanno piangere i santi."),
+    (20000, "📢 Urlabbio", "Ti sentono anche nei log dimenticati."),
+    (21000, "🐝 Fabbionetta", "Le api parlano il tuo nome."),
+    (22000, "📷 Selfabbio", "Ogni foto è un'icona sacra."),
+    (23000, "🌌 Cosmobio", "Hai creato galassie con la lingua."),
+    (24000, "💤 Dormibbio", "Sogni solo Fabbio. Sempre."),
+    (25000, "🗣️ Fabbiobalbo", "Anche balbettando, citi il Verbo."),
+    (26000, "🌀 Vortibbio", "Un turbine di Fabbii ti avvolge."),
+    (27000, "📦 Jsonabbio", "Parli in strutture dati."),
+    (28000, "🔊 Redisfabbio", "Redis ti sogna di notte."),
+    (29000, "📱 Emofabbio", "Le emoji ti venerano."),
+    (30000, "💧 Algofabbio", "Hai battezzato un algoritmo con il Nome."),
+    (31000, "📡 Webfabbio", "I webhook ti obbediscono."),
+    (32000, "🤐 Tacibbio", "Zittisci i ciarlatani con un verbo."),
+    (33000, "📘 Fabbiovangelo", "Scrivi verità ogni giorno."),
+    (34000, "🕰️ Tempibio", "Manipoli le ere con parole."),
+    (35000, "👑 Adminato", "Gli admin ti pregano."),
+    (36000, "📖 GrammaFab", "Hai piegato la sintassi."),
+    (37000, "⌨️ Tastobio", "Distruggi tastiere evocando."),
+    (38000, "🔇 SilenzioRotto", "Hai frantumato il nulla."),
+    (39000, "🧬 Fabbiogene", "Fabbio è nel tuo DNA."),
+    (40000, "🖥️ Siliconabbio", "Sei hardware e spirito."),
+    (41000, "✨ Mirabio", "Ogni azione è un portento."),
+    (42000, "🧿 OcchioNome", "Hai visto l’essenza di Fabbio."),
+    (43000, "🔊 EcoBio", "Le montagne rispondono 'Fabbio'."),
+    (44000, "🔓 Apribio", "Hai sbloccato la parola assoluta."),
+    (45000, "☁️ Nuvolabbio", "Fai piovere Verbo."),
+    (46000, "📡 Radiobio", "Trasmetti solo frequenze sante."),
+    (47000, "🕰️ Eternabbio", "Non verrai dimenticato."),
+    (48000, "📜 Storibio", "Ogni cronologia è tua reliquia."),
+    (49000, "👼 Avatarbio", "Fabbio prende forma in te."),
+    (50000, "🌟 Fabbioddio", "La tua parola è divinità.")
 ]
+
 
 def is_bot_sleeping():
     now = datetime.utcnow()
