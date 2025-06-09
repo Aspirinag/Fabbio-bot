@@ -1,5 +1,3 @@
-# FabbioBot - Codice completo
-
 import logging
 import os
 import json
@@ -18,16 +16,16 @@ REDIS_URL = os.environ.get("REDIS_URL")
 DOMAIN = os.environ.get("DOMAIN")
 PORT = int(os.environ.get("PORT", 8000))
 WEBHOOK_PATH = "/webhook"
-ADMIN_CHAT_ID = os.environ.get("ADMIN_CHAT_ID")
+ADMIN_CHAT_ID = os.environ.get("ADMIN_CHAT_ID")  # tuo user_id telegram
 ADMIN_IDS = [int(ADMIN_CHAT_ID)] if ADMIN_CHAT_ID else []
 
 app = None
 r = redis.Redis.from_url(REDIS_URL, decode_responses=True)
 ALIASES = ["fabbio", "fabbiotron", "fabbiocop", "fbb"]
 
-# 🎖️ Achievements ogni 100 Fabbii
+# 🎖️ Achievement personalizzati
 ACHIEVEMENTS = [
-    ((i + 1) * 100, title, desc) for i, (title, desc) in enumerate([
+    ((i+1) * 100, title, desc) for i, (title, desc) in enumerate([
         ("👶 Neofabbio", "Hai raggiunto 100 evocazioni. Il tuo viaggio inizia ora."),
         ("✨ Risvegliato", "200 Fabbii scritti: percepisci il segnale."),
         ("🌀 Discepolo della Fabbiosofia", "300 Fabbii: studi i testi antichi."),
@@ -51,47 +49,19 @@ ACHIEVEMENTS = [
     ])
 ]
 
-# 🧠 Quiz
+# 🧠 Quiz Fabbioso
 QUIZ = [
     {"question": "🌍 *Dove nasce il Fabbio?*", "options": ["Nel codice sorgente", "Nel cuore degli utenti", "Nel cloud", "Nel caos"]},
     {"question": "🌈 *Cosa accade quando scrivi Fabbio sotto la luna piena?*", "options": ["Appare un admin", "Si risveglia l’antico meme", "Crasha Telegram", "Nessuno lo sa"]},
     {"question": "📱 *Chi riceve il segnale del Fabbio?*", "options": ["Solo i degni", "Chi ha scritto 1000 volte", "Chi è online alle 3", "Tutti, ma solo una volta"]},
-    {"question": "🧤 *Cosa accade se pronunci Fabbio 3 volte allo specchio?*", "options": ["Compare un meme", "Crash del cervello", "Nulla, solo tristezza", "Ti insulti da solo"]},
-    {"question": "🪜 *Come purificarsi da un Fabbio scritto male?*", "options": ["Scriverne 10 giusti", "Chiedere perdono", "Autoironizzarsi", "Non si può"]},
+    {"question": "🨤 *Cosa accade se pronunci Fabbio 3 volte allo specchio?*", "options": ["Compare un meme", "Crash del cervello", "Nulla, solo tristezza", "Ti insulti da solo"]},
+    {"question": "🧬 *Come purificarsi da un Fabbio scritto male?*", "options": ["Scriverne 10 giusti", "Chiedere perdono", "Autoironizzarsi", "Non si può"]},
     {"question": "📦 *Cosa contiene il Sacro Archivio Fabbioso?*", "options": ["Tutti i messaggi cringe", "Le gif bannate", "Verità taciute", "Sticker dimenticati"]},
     {"question": "🪙 *Quanto vale un Fabbio?*", "options": ["1 BTC", "0", "Tutto", "Non ha prezzo"]},
     {"question": "🕳 *Cosa c’è nel buco nero Fabbioso?*", "options": ["Contro-meme", "Boomer", "Ironia concentrata", "Nulla"]},
     {"question": "⚖ *Cosa pesa più: un Fabbio o mille parole?*", "options": ["Un Fabbio", "Le parole", "Uguali", "Dipende"]},
     {"question": "🧘 *Chi raggiunge il Nirvana del Fabbio?*", "options": ["Chi non spammi", "Chi meme bene", "Chi ignora", "Solo tu"]}
 ]
-
-# 📬 Gestione messaggi
-async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    if not update.message or not update.message.text:
-        return
-    text = update.message.text.lower()
-    count = sum(text.count(alias) for alias in ALIASES)
-    if count == 0:
-        return
-    fabbio_count = int(r.get("fabbio_count") or 0) + count
-    r.set("fabbio_count", fabbio_count)
-    user_id = str(update.effective_user.id)
-    username = update.effective_user.username or update.effective_user.first_name or "Sconosciuto"
-    current = json.loads(r.get(f"user:{user_id}") or json.dumps({"count": 0, "username": username, "unlocked": []}))
-    current["count"] += count
-    current["username"] = username
-    unlocked = set(current.get("unlocked", []))
-    for threshold, title, desc in ACHIEVEMENTS:
-        if current["count"] >= threshold and str(threshold) not in unlocked:
-            unlocked.add(str(threshold))
-            await update.message.reply_text(f"🏆 *{title}* — {desc}", parse_mode="Markdown")
-    current["unlocked"] = list(unlocked)
-    r.set(f"user:{user_id}", json.dumps(current))
-
-# 📊 Comandi
-async def show_stats(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    count = int(r.get("fabbio_count") or 0)
-    await update.message.reply_text(f"📊 Abbiamo scritto {count} volte Fabbio. Fabbio ti amiamo.")
 
 async def top(update: Update, context: ContextTypes.DEFAULT_TYPE):
     users = [key for key in r.scan_iter("user:*")]
@@ -106,8 +76,7 @@ async def top(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not classifica:
         await update.message.reply_text("⛔ Nessun evocatore trovato nella classifica.")
         return
-    testo = "👑 *Classifica dei Fabbionauti:*
-"
+    testo = "👑 *Classifica dei Fabbionauti:*\n"
     for i, (count, name) in enumerate(classifica[:10], 1):
         testo += f"{i}. {name} — {count} Fabbii\n"
     await update.message.reply_text(testo, parse_mode="Markdown")
