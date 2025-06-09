@@ -95,8 +95,7 @@ QUIZ = [
     {"question": "📜 *Cosa custodisce il Codice Fabbioso?*", "options": ["Tutti i Fabbii scritti", "I traguardi eterni", "L'essenza del verbo", "Nulla: è tutto effimero"]},
     {"question": "🧘 *Chi trova pace nel Fabbio?*", "options": ["Chi ha smesso di cercare", "Chi scrive col cuore", "Chi ride da solo", "Chi crede"]},
     {"question": "🪵 *Cosa costruisci con 30.000 Fabbii?*", "options": ["Un tempio", "Una leggenda", "Un sentiero", "Un silenzio sacro"]},
-    {"question": "🎇 *Cosa accade alla fine del cammino Fabbioso?*", "options": ["Inizi di nuovo", "Capisci il nulla", "Scrivi senza più pensare", "Sorridi e scompari"]}
-]},
+    {"question": "🎇 *Cosa accade alla fine del cammino Fabbioso?*", "options": ["Inizi di nuovo", "Capisci il nulla", "Scrivi senza più pensare", "Sorridi e scompari"]},
     {"question": "🧠 *Quante sinapsi perdi scrivendo Fabbio?*", "options": ["Zero, guadagno solo ironia", "Una per volta", "Non le conto più", "Avevo sinapsi?"]},
     {"question": "📉 *Quanto si svaluta il tuo QI ogni volta che apri Telegram?*", "options": ["Tanto", "Dipende dal gruppo", "Non posso permettermelo", "Fabbio è un booster"]},
     {"question": "🔥 *Chi merita il ban immediato?*", "options": ["Chi scrive 'Fabio' con una B sola", "Chi inoltra vocali da 4 min", "Chi usa sticker del 2017", "Tutti, senza pietà"]},
@@ -115,8 +114,7 @@ QUIZ = [
     {"question": "🧼 *Cosa usi per lavarti dai peccati memetici?*", "options": ["Ironia abrasiva", "Silenzio passivo-aggressivo", "Un ban temporaneo", "Niente, ci sguazzo"]},
     {"question": "🗑 *Hai mai fatto un messaggio degno di essere pinnato?*", "options": ["No", "Forse, ma l’admin è cieco", "Sì, era una gif di un gatto", "Tutti meritano il cestino"]},
     {"question": "💀 *Chi sei davvero?*", "options": ["Un profilo fake", "Uno che scrive 'ciao' alle 2", "Un meme ambulante", "Il nulla connesso"]},
-    {"question": "⚰ *Quante volte sei morto leggendo il gruppo?*", "options": ["Troppe", "Una al giorno", "Sto morendo ora", "Ogni volta che leggo 'raga consiglio'"]}
-]},
+    {"question": "⚰ *Quante volte sei morto leggendo il gruppo?*", "options": ["Troppe", "Una al giorno", "Sto morendo ora", "Ogni volta che leggo 'raga consiglio'"]},
     {"question": "📜 *In quale giorno Fabbio creò l’ironia?*", "options": ["Il primo", "Il settimo", "Sempre", "Mai"]},
     {"question": "🌀 *Dove dimora il Vero Fabbio?*", "options": ["Nel codice", "Nel cuore", "Nel meme", "In tutti"]},
     {"question": "🔊 *Chi ha sentito la Voce di Fabbio?*", "options": ["Chi ascolta", "Chi scrive", "Chi dorme", "Chi legge"]},
