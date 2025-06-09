@@ -54,7 +54,7 @@ QUIZ = [
     {"question": "🌍 *Dove nasce il Fabbio?*", "options": ["Nel codice sorgente", "Nel cuore degli utenti", "Nel cloud", "Nel caos"]},
     {"question": "🌈 *Cosa accade quando scrivi Fabbio sotto la luna piena?*", "options": ["Appare un admin", "Si risveglia l’antico meme", "Crasha Telegram", "Nessuno lo sa"]},
     {"question": "📱 *Chi riceve il segnale del Fabbio?*", "options": ["Solo i degni", "Chi ha scritto 1000 volte", "Chi è online alle 3", "Tutti, ma solo una volta"]},
-    {"question": "🨤 *Cosa accade se pronunci Fabbio 3 volte allo specchio?*", "options": ["Compare un meme", "Crash del cervello", "Nulla, solo tristezza", "Ti insulti da solo"]},
+    {"question": "🪤 *Cosa accade se pronunci Fabbio 3 volte allo specchio?*", "options": ["Compare un meme", "Crash del cervello", "Nulla, solo tristezza", "Ti insulti da solo"]},
     {"question": "🧬 *Come purificarsi da un Fabbio scritto male?*", "options": ["Scriverne 10 giusti", "Chiedere perdono", "Autoironizzarsi", "Non si può"]},
     {"question": "📦 *Cosa contiene il Sacro Archivio Fabbioso?*", "options": ["Tutti i messaggi cringe", "Le gif bannate", "Verità taciute", "Sticker dimenticati"]},
     {"question": "🪙 *Quanto vale un Fabbio?*", "options": ["1 BTC", "0", "Tutto", "Non ha prezzo"]},
@@ -62,6 +62,10 @@ QUIZ = [
     {"question": "⚖ *Cosa pesa più: un Fabbio o mille parole?*", "options": ["Un Fabbio", "Le parole", "Uguali", "Dipende"]},
     {"question": "🧘 *Chi raggiunge il Nirvana del Fabbio?*", "options": ["Chi non spammi", "Chi meme bene", "Chi ignora", "Solo tu"]}
 ]
+
+async def show_stats(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    count = int(r.get("fabbio_count") or 0)
+    await update.message.reply_text(f"📊 Abbiamo scritto {count} volte Fabbio. Fabbio ti amiamo.")
 
 async def top(update: Update, context: ContextTypes.DEFAULT_TYPE):
     users = [key for key in r.scan_iter("user:*")]
@@ -74,89 +78,40 @@ async def top(update: Update, context: ContextTypes.DEFAULT_TYPE):
             logging.warning(f"Errore nel parsing del dato Redis per {key}: {e}")
     classifica.sort(reverse=True)
     if not classifica:
-        await update.message.reply_text("⛔ Nessun evocatore trovato nella classifica.")
+        await update.message.reply_text("⛔️ Nessun evocatore trovato nella classifica.")
         return
-    testo = "👑 *Classifica dei Fabbionauti:*\n"
+    testo = "👑 *Classifica dei Fabbionauti:*
+"
     for i, (count, name) in enumerate(classifica[:10], 1):
         testo += f"{i}. {name} — {count} Fabbii\n"
     await update.message.reply_text(testo, parse_mode="Markdown")
 
-async def me_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+async def me(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = str(update.effective_user.id)
     data = json.loads(r.get(f"user:{user_id}") or json.dumps({"count": 0, "username": "Sconosciuto", "unlocked": []}))
     count = data.get("count", 0)
     unlocked = data.get("unlocked", [])
-    response = f"📈 Hai scritto 'Fabbio' {count} volte.\n"
+    testo = f"📍 Hai evocato Fabbio {count} volte.\n"
     if unlocked:
-        response += "\n🏅 *Achievement sbloccati:*\n"
-        for threshold, title, _ in ACHIEVEMENTS:
-            if str(threshold) in unlocked:
-                response += f"- {title} ({threshold} Fabbii)\n"
+        testo += "🏅 Traguardi raggiunti:\n"
+        for ach in unlocked:
+            for threshold, title, desc in ACHIEVEMENTS:
+                if str(threshold) == str(ach):
+                    testo += f"— {title}: {desc}\n"
     else:
-        response += "Non hai ancora sbloccato nessun traguardo... ma il cammino è lungo!"
-    await update.message.reply_text(response, parse_mode="Markdown")
+        testo += "(Nessun traguardo sbloccato ancora)"
+    await update.message.reply_text(testo)
 
-async def fabbioquiz(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    quiz = random.choice(QUIZ)
-    keyboard = [[InlineKeyboardButton(opt, callback_data="quiz_fabbio")] for opt in quiz["options"]]
-    await update.message.reply_text(quiz["question"], parse_mode="Markdown", reply_markup=InlineKeyboardMarkup(keyboard))
-
-async def quiz_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    query = update.callback_query
-    await query.answer()
-    await query.edit_message_text("✅ *Risposta esatta!* Hai evocato Fabbio.", parse_mode="Markdown")
-
-async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    testo = (
-        "📜 *Comandi disponibili:*\n"
-        "/stats — Totale Fabbii globali\n"
-        "/top — Classifica dei Fabbionauti\n"
-        "/me — I tuoi Fabbii e traguardi\n"
-        "/fabbioquiz — Quiz mistico-comico\n"
-        "/help — Elenco comandi\n"
-        "/resetclassifica — (admin only)"
-    )
-    await update.message.reply_text(testo, parse_mode="Markdown")
-
-async def reset_classifica(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    user_id = str(update.effective_user.id)
-    if user_id not in [str(i) for i in ADMIN_IDS]:
-        await update.message.reply_text("🔒 Non sei degno di brandire il potere del reset.")
-        return
-    deleted = 0
-    for key in r.scan_iter("user:*"):
-        r.delete(key)
-        deleted += 1
-    await update.message.reply_text(f"⚡ Classifica resettata. {deleted} anime purificate. ✨")
-
-# 🌐 Webhook
-async def telegram_webhook_handler(request):
-    global app
-    try:
-        data = await request.json()
-        update = Update.de_json(data, app.bot)
-        await app.update_queue.put(update)
-        return web.Response(text="OK")
-    except Exception as e:
-        logging.exception("❌ Errore nel webhook handler:")
-        return web.Response(status=500, text="Errore")
-
-# 🚀 Main
 async def main():
     global app
     logging.basicConfig(level=logging.INFO)
     app = Application.builder().token(BOT_TOKEN).build()
     app.add_handler(CommandHandler("stats", show_stats))
     app.add_handler(CommandHandler("top", top))
-    app.add_handler(CommandHandler("me", me_command))
-    app.add_handler(CommandHandler("fabbioquiz", fabbioquiz))
-    app.add_handler(CommandHandler("help", help_command))
-    app.add_handler(CommandHandler("resetclassifica", reset_classifica))
-    app.add_handler(CallbackQueryHandler(quiz_callback, pattern="^quiz_fabbio$"))
-    app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
+    app.add_handler(CommandHandler("me", me))
     await app.initialize()
     web_app = web.Application()
-    web_app.router.add_post(WEBHOOK_PATH, telegram_webhook_handler)
+    web_app.router.add_post(WEBHOOK_PATH, lambda req: telegram_webhook_handler(req))
     runner = web.AppRunner(web_app)
     await runner.setup()
     site = web.TCPSite(runner, "0.0.0.0", PORT)
@@ -166,6 +121,18 @@ async def main():
     await app.start()
     while True:
         await asyncio.sleep(3600)
+
+def telegram_webhook_handler(request):
+    async def handler():
+        try:
+            data = await request.json()
+            update = Update.de_json(data, app.bot)
+            await app.update_queue.put(update)
+            return web.Response(text="OK")
+        except Exception as e:
+            logging.exception("Errore nel webhook handler:")
+            return web.Response(status=500, text="Errore")
+    return handler()
 
 if __name__ == "__main__":
     nest_asyncio.apply()
