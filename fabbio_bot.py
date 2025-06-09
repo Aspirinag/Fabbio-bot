@@ -186,21 +186,20 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     r.set(f"user:{user_id}", json.dumps(current))
 
 async def show_me(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    if user_on_cooldown(update.effective_user.id, "me"):
-        return
     user_id = str(update.effective_user.id)
     data = json.loads(r.get(f"user:{user_id}") or json.dumps({"count": 0, "username": "", "unlocked": []}))
     count = data["count"]
     unlocked = data.get("unlocked", [])
     next_ach = next((th for th, _, _ in ACHIEVEMENTS if str(th) not in unlocked and th > count), None)
+    
     response = f"🔍 Hai scritto *{count}* Fabbii."
     if next_ach:
-        response += f"
-🎯 Prossimo traguardo: {next_ach}"
+        response += f"\n🎯 Prossimo traguardo: {next_ach}"
     if unlocked:
-        response += f"
-🏆 Traguardi sbloccati: {len(unlocked)}"
+        response += f"\n🏆 Traguardi sbloccati: {len(unlocked)}"
+    
     await update.message.reply_text(response, parse_mode="Markdown")
+
 
 async def show_stats(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if user_on_cooldown(update.effective_user.id, "stats"):
