@@ -7,7 +7,7 @@ import redis
 from aiohttp import web
 import asyncio
 import nest_asyncio
-from telegram import Update, InlineKeyboardMarkup, InlineKeyboardButton
+from telegram import Update, InlineKeyboardMarkup, InlineKeyboardButton, InputFile
 from telegram.ext import Application, CommandHandler, MessageHandler, ContextTypes, filters
 
 # 🔧 Config
@@ -27,7 +27,6 @@ ACHIEVEMENTS = [
         ("🐣 Il Fabbiatore", "Hai evocato il tuo primo migliaio. È iniziato tutto da qui."),
         ("🌪 Fabbionico", "Hai superato i 2000. Sei un turbine di Fabbio."),
         ("🧠 Fabbinato", "3000 Fabbio e già trasudi conoscenza."),
-        ("🔮 Visione di Fabbio", "4000 volte e inizi a vedere oltre."),
         ("🚀 Fabbionauta", "5000 lanci nello spazio memetico."),
         ("🔥 Infabbionato", "Sei ormai bruciato dal sacro meme."),
         ("🧬 DNA Fabbioso", "7000 Fabbii impressi nel tuo codice genetico."),
@@ -40,11 +39,11 @@ ACHIEVEMENTS = [
 
 QUIZ = [
     {"question": "🌍 *Dove nasce il Fabbio?*", "options": ["Nel codice sorgente", "Nel cuore degli utenti", "Nel cloud", "Nel caos"]},
-    {"question": "🌌 *Cosa accade dopo 1000 Fabbii?*", "options": ["Nulla", "Risvegli", "Cringi", "Ascendi"]},
-    {"question": "🕵 *Chi recita nel Teatro del Fabbio?*", "options": ["Tutti", "Nessuno", "Solo tu", "I mematori"]},
-    {"question": "🧠 *Chi comprende davvero Fabbio?*", "options": ["Nessuno", "Chi non domanda", "Solo i puri", "Chi ha letto tutto"]},
-    {"question": "📱 *Cos’è il Fabbio Frequency?*", "options": ["Una radio", "Un mood", "Un’allucinazione", "Tutte"]},
-    {"question": "🧪 *Cosa ottieni mischiando Fabbio con caos?*", "options": ["Meme puro", "Il mondo", "Il nulla", "Ancora Fabbio"]},
+    {"question": "🌈 *Cosa accade quando scrivi Fabbio sotto la luna piena?*", "options": ["Appare un admin", "Si risveglia l’antico meme", "Crasha Telegram", "Nessuno lo sa"]},
+    {"question": "📡 *Chi riceve il segnale del Fabbio?*", "options": ["Solo i degni", "Chi ha scritto 1000 volte", "Chi è online alle 3", "Tutti, ma solo una volta"]},
+    {"question": "🧤 *Cosa accade se pronunci Fabbio 3 volte allo specchio?*", "options": ["Compare un meme", "Crash del cervello", "Nulla, solo tristezza", "Ti insulti da solo"]},
+    {"question": "🧼 *Come purificarsi da un Fabbio scritto male?*", "options": ["Scriverne 10 giusti", "Chiedere perdono", "Autoironizzarsi", "Non si può"]},
+    {"question": "📦 *Cosa contiene il Sacro Archivio Fabbioso?*", "options": ["Tutti i messaggi cringe", "Le gif bannate", "Verità taciute", "Sticker dimenticati"]},
     {"question": "🪙 *Quanto vale un Fabbio?*", "options": ["1 BTC", "0", "Tutto", "Non ha prezzo"]},
     {"question": "🕳 *Cosa c’è nel buco nero Fabbioso?*", "options": ["Contro-meme", "Boomer", "Ironia concentrata", "Nulla"]},
     {"question": "⚖ *Cosa pesa più: un Fabbio o mille parole?*", "options": ["Un Fabbio", "Le parole", "Uguali", "Dipende"]},
@@ -69,13 +68,13 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     for threshold, title, desc in ACHIEVEMENTS:
         if current["count"] >= threshold and str(threshold) not in unlocked:
             unlocked.add(str(threshold))
-            await update.message.reply_text(f"🏆 *{title}* — {desc}", parse_mode="Markdown")
+            await update.message.reply_text(f"\U0001F3C6 *{title}* — {desc}", parse_mode="Markdown")
     current["unlocked"] = list(unlocked)
     r.set(f"user:{user_id}", json.dumps(current))
 
 async def show_stats(update: Update, context: ContextTypes.DEFAULT_TYPE):
     count = int(r.get("fabbio_count") or 0)
-    await update.message.reply_text(f"📊 Abbiamo scritto {count} volte Fabbio. Fabbio ti amiamo.")
+    await update.message.reply_text(f"\U0001F4CA Abbiamo scritto {count} volte Fabbio. Fabbio ti amiamo.")
 
 async def top(update: Update, context: ContextTypes.DEFAULT_TYPE):
     users = [key for key in r.scan_iter("user:*")]
@@ -84,7 +83,7 @@ async def top(update: Update, context: ContextTypes.DEFAULT_TYPE):
         data = json.loads(r.get(key))
         classifica.append((data.get("count", 0), data.get("username", "Sconosciuto")))
     classifica.sort(reverse=True)
-    testo = "👑 *Classifica dei Fabbionauti:*\n"
+    testo = "\U0001F451 *Classifica dei Fabbionauti:*\n"
     for i, (count, name) in enumerate(classifica[:10], 1):
         testo += f"{i}. {name} — {count} Fabbii\n"
     await update.message.reply_text(testo, parse_mode="Markdown")
@@ -93,6 +92,16 @@ async def fabbioquiz(update: Update, context: ContextTypes.DEFAULT_TYPE):
     quiz = random.choice(QUIZ)
     keyboard = [[InlineKeyboardButton(opt, callback_data="quiz_none")] for opt in quiz["options"]]
     await update.message.reply_text(quiz["question"], parse_mode="Markdown", reply_markup=InlineKeyboardMarkup(keyboard))
+
+async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    testo = (
+        "📜 *Comandi disponibili:*\n"
+        "/stats — Totale Fabbii globali\n"
+        "/top — Classifica dei Fabbionauti\n"
+        "/fabbioquiz — Quiz mistico-comico\n"
+        "Scrivi 'Fabbio' (o i suoi alias) per evocare la potenza e sbloccare traguardi!"
+    )
+    await update.message.reply_text(testo, parse_mode="Markdown")
 
 async def telegram_webhook_handler(request):
     global app
@@ -112,6 +121,7 @@ async def main():
     app.add_handler(CommandHandler("fabbioquiz", fabbioquiz))
     app.add_handler(CommandHandler("stats", show_stats))
     app.add_handler(CommandHandler("top", top))
+    app.add_handler(CommandHandler("help", help_command))
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
     await app.initialize()
     web_app = web.Application()
