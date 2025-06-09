@@ -97,10 +97,17 @@ async def top(update: Update, context: ContextTypes.DEFAULT_TYPE):
     users = [key for key in r.scan_iter("user:*")]
     classifica = []
     for key in users:
-        data = json.loads(r.get(key))
-        classifica.append((data.get("count", 0), data.get("username", "Sconosciuto")))
+        try:
+            data = json.loads(r.get(key))
+            classifica.append((data.get("count", 0), data.get("username", "Sconosciuto")))
+        except Exception as e:
+            logging.warning(f"Errore nel parsing del dato Redis per {key}: {e}")
     classifica.sort(reverse=True)
-    testo = "👑 *Classifica dei Fabbionauti:*\n"
+    if not classifica:
+        await update.message.reply_text("⛔ Nessun evocatore trovato nella classifica.")
+        return
+    testo = "👑 *Classifica dei Fabbionauti:*
+"
     for i, (count, name) in enumerate(classifica[:10], 1):
         testo += f"{i}. {name} — {count} Fabbii\n"
     await update.message.reply_text(testo, parse_mode="Markdown")
