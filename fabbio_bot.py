@@ -8,7 +8,7 @@ from aiohttp import web
 import asyncio
 import nest_asyncio
 from telegram import Update, InlineKeyboardMarkup, InlineKeyboardButton, InputFile
-from telegram.ext import Application, CommandHandler, MessageHandler, ContextTypes, filters
+from telegram.ext import Application, CommandHandler, MessageHandler, CallbackQueryHandler, ContextTypes, filters
 
 # 🔧 Config
 BOT_TOKEN = os.environ.get("BOT_TOKEN")
@@ -90,8 +90,13 @@ async def top(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 async def fabbioquiz(update: Update, context: ContextTypes.DEFAULT_TYPE):
     quiz = random.choice(QUIZ)
-    keyboard = [[InlineKeyboardButton(opt, callback_data="quiz_none")] for opt in quiz["options"]]
+    keyboard = [[InlineKeyboardButton(opt, callback_data=f"quiz_fabbio")] for opt in quiz["options"]]
     await update.message.reply_text(quiz["question"], parse_mode="Markdown", reply_markup=InlineKeyboardMarkup(keyboard))
+
+async def quiz_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    query = update.callback_query
+    await query.answer()
+    await query.edit_message_text("✅ *Risposta esatta!* Hai evocato Fabbio.", parse_mode="Markdown")
 
 async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     testo = (
@@ -122,6 +127,7 @@ async def main():
     app.add_handler(CommandHandler("stats", show_stats))
     app.add_handler(CommandHandler("top", top))
     app.add_handler(CommandHandler("help", help_command))
+    app.add_handler(CallbackQueryHandler(quiz_callback, pattern="^quiz_fabbio$"))
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
     await app.initialize()
     web_app = web.Application()
