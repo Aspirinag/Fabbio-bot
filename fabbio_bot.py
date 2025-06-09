@@ -10,28 +10,28 @@ import nest_asyncio
 from telegram import Update
 from telegram.ext import Application, CommandHandler, MessageHandler, ContextTypes, filters
 
-# 🔐 Config
+# 🔧 Variabili di ambiente
 BOT_TOKEN = os.environ.get("BOT_TOKEN")
 REDIS_URL = os.environ.get("REDIS_URL")
 DOMAIN = os.environ.get("DOMAIN")  # Es: https://fabbio-bot-production.up.railway.app
 PORT = int(os.environ.get("PORT", 8000))
 WEBHOOK_PATH = "/webhook"
 
-# 🔄 Variabili globali
+# 🔄 Globali
 app = None
 r = redis.Redis.from_url(REDIS_URL, decode_responses=True)
 ALIASES = ["fabbio", "fabbiotron", "fabbiocop", "fbb"]
 ACHIEVEMENTS = [(1000, "🌱 Novabbio", "Hai sussurrato il Nome per la prima volta.")]
 fabbio_count = int(r.get("fabbio_count") or 0)
 
-# 💤 Orario notturno
+# 😴 Fascia oraria di sonno
 def is_bot_sleeping():
     now = datetime.utcnow()
     hour = (now.hour + 2) % 24
     minute = now.minute
     return (hour == 0 and minute >= 40) or (0 < hour < 8)
 
-# ✉️ Handler messaggi
+# ✉️ Risposta ai messaggi contenenti "fabbio"
 async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     global fabbio_count
     if not update.message or not update.message.text:
@@ -62,7 +62,7 @@ async def show_stats(update: Update, context: ContextTypes.DEFAULT_TYPE):
     count = int(r.get("fabbio_count") or 0)
     await update.message.reply_text(f"📊 Abbiamo scritto {count} volte Fabbio. Fabbio ti amiamo.")
 
-# 🟢 Comando /start
+# 👋 Comando /start
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text("👋 Ciao! Fabbio è all'ascolto. Scrivilo e vedrai.")
 
@@ -84,6 +84,8 @@ async def main():
     global app
     logging.basicConfig(level=logging.DEBUG)
 
+    print("🟢 Il bot è partito")
+
     app = Application.builder().token(BOT_TOKEN).build()
     app.add_handler(CommandHandler("start", start))
     app.add_handler(CommandHandler("stats", show_stats))
@@ -91,24 +93,27 @@ async def main():
 
     await app.initialize()
 
-    # 🔧 Server aiohttp per il webhook
+    # Server aiohttp per il webhook
     web_app = web.Application()
     web_app.router.add_post(WEBHOOK_PATH, telegram_webhook_handler)
     runner = web.AppRunner(web_app)
     await runner.setup()
     site = web.TCPSite(runner, "0.0.0.0", PORT)
     await site.start()
+
     logging.info(f"🌐 Webhook attivo su {DOMAIN}{WEBHOOK_PATH}")
     logging.info("🤖 Bot avviato, in attesa di messaggi...")
 
+    # Registra il webhook
     await app.bot.delete_webhook(drop_pending_updates=True)
     await app.bot.set_webhook(url=f"{DOMAIN}{WEBHOOK_PATH}")
     await app.start()
 
+    # Mantieni vivo il loop
     while True:
         await asyncio.sleep(3600)
 
-# 🚀 Avvio
+# 🚀 Entry point
 if __name__ == "__main__":
     nest_asyncio.apply()
     asyncio.run(main())
