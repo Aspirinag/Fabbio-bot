@@ -16,7 +16,7 @@ REDIS_URL = os.environ.get("REDIS_URL")
 DOMAIN = os.environ.get("DOMAIN")
 PORT = int(os.environ.get("PORT", 8000))
 WEBHOOK_PATH = "/webhook"
-ADMIN_CHAT_ID = os.environ.get("ADMIN_CHAT_ID")  # tuo user_id telegram
+ADMIN_CHAT_ID = os.environ.get("ADMIN_CHAT_ID")
 ADMIN_IDS = [int(ADMIN_CHAT_ID)] if ADMIN_CHAT_ID else []
 
 app = None
@@ -101,6 +101,18 @@ async def me(update: Update, context: ContextTypes.DEFAULT_TYPE):
         testo += "(Nessun traguardo sbloccato ancora)"
     await update.message.reply_text(testo)
 
+def telegram_webhook_handler(request):
+    async def handler(request):
+        try:
+            data = await request.json()
+            update = Update.de_json(data, app.bot)
+            await app.process_update(update)
+            return web.Response(text="OK")
+        except Exception as e:
+            logging.exception("Errore nel webhook handler:")
+            return web.Response(status=500, text="Errore")
+    return handler
+
 async def main():
     global app
     logging.basicConfig(level=logging.INFO)
@@ -108,30 +120,22 @@ async def main():
     app.add_handler(CommandHandler("stats", show_stats))
     app.add_handler(CommandHandler("top", top))
     app.add_handler(CommandHandler("me", me))
+
     await app.initialize()
     web_app = web.Application()
-    web_app.router.add_post(WEBHOOK_PATH, lambda req: telegram_webhook_handler(req))
+    web_app.router.add_post(WEBHOOK_PATH, telegram_webhook_handler)
+
     runner = web.AppRunner(web_app)
     await runner.setup()
     site = web.TCPSite(runner, "0.0.0.0", PORT)
     await site.start()
+
     await app.bot.delete_webhook(drop_pending_updates=True)
     await app.bot.set_webhook(url=f"{DOMAIN}{WEBHOOK_PATH}")
     await app.start()
+
     while True:
         await asyncio.sleep(3600)
-
-def telegram_webhook_handler(request):
-    async def handler():
-        try:
-            data = await request.json()
-            update = Update.de_json(data, app.bot)
-            await app.update_queue.put(update)
-            return web.Response(text="OK")
-        except Exception as e:
-            logging.exception("Errore nel webhook handler:")
-            return web.Response(status=500, text="Errore")
-    return handler()
 
 if __name__ == "__main__":
     nest_asyncio.apply()
