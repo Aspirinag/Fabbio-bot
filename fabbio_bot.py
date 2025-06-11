@@ -79,7 +79,33 @@ async def blocked_if_sleeping(update: Update):
     return False
 
 async def show_stats(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text("📊 Le tue statistiche non sono ancora disponibili.")
+    user_id = str(update.effective_user.id)
+    key = f"user:{user_id}"
+    data = r.get(key)
+
+    if not data:
+        await update.message.reply_text("🙈 Nessuna evocazione trovata per te.")
+        return
+
+    user_data = json.loads(data)
+    count = user_data.get("count", 0)
+    username = user_data.get("username") or update.effective_user.first_name
+
+    total_key = "global:total"
+    total_count = r.get(total_key)
+    if total_count is None:
+        total_count = 19752
+        r.set(total_key, total_count)
+    else:
+        total_count = int(total_count)
+
+    reply = f"📊 Statistiche di {username}
+"
+    reply += f"🔢 Evocazioni personali: {count}
+"
+    reply += f"🌍 Evocazioni totali: {total_count}"
+
+    await update.message.reply_text(reply)
 
 async def me(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = str(update.effective_user.id)
