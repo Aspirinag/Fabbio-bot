@@ -49,7 +49,7 @@ ACHIEVEMENTS = [
     ])
 ]
 
-# 🤮 Quiz Fabbioso
+# 🨮 Quiz Fabbioso
 QUIZ = [
     {"question": "🌍 *Dove nasce il Fabbio?*", "options": ["Nel codice sorgente", "Nel buco del culo", "Da un uovo", "Nel caos"]},
     {"question": "🌈 *Cosa accade quando scrivi Fabbio sotto la luna piena?*", "options": ["Muori, bestia", "Diventi un lupo man mano", "Crasha Telegram", "Nessuno lo sa"]},
