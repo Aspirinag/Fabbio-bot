@@ -100,11 +100,8 @@ async def me(update: Update, context: ContextTypes.DEFAULT_TYPE):
             best_title = title
             break
 
-    reply = (
-        f"👤 Nome: {username}
-"
-        f"📈 Fabbii evocati: {count}"
-    )
+    reply = f"👤 Nome: {username}
+📈 Fabbii evocati: {count}"
     if best_title:
         reply += f"
 🏅 Achievement: {best_title}"
