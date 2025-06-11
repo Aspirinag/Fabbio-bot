@@ -111,8 +111,6 @@ async def telegram_webhook_handler(request):
         logging.exception("Errore nel webhook handler:")
         return web.Response(status=500, text="Errore")
 
-    return handler
-
 async def main():
     global app
     logging.basicConfig(level=logging.INFO)
