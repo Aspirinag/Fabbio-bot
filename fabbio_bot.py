@@ -49,7 +49,7 @@ ACHIEVEMENTS = [
     ])
 ]
 
-# �� Quiz Fabbioso
+# 🎮 Quiz Fabbioso
 QUIZ = [
     {"question": "🌍 *Dove nasce il Fabbio?*", "options": ["Nel codice sorgente", "Nel buco del culo", "Da un uovo", "Nel caos"]},
     {"question": "🌈 *Cosa accade quando scrivi Fabbio sotto la luna piena?*", "options": ["Muori, bestia", "Diventi un lupo man mano", "Crasha Telegram", "Nessuno lo sa"]},
@@ -90,7 +90,7 @@ async def top(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not classifica:
         await update.message.reply_text("⛔️ Nessun evocatore trovato nella classifica.")
         return
-    testo = "\U0001f451 *Classifica dei Fabbionauti:*\n"
+    testo = "👑 *Classifica dei Fabbionauti:*\n"
     for i, (count, name) in enumerate(classifica[:10], 1):
         testo += f"{i}. {name} — {count} Fabbii\n"
     await update.message.reply_text(testo, parse_mode="Markdown")
@@ -111,6 +111,17 @@ async def me(update: Update, context: ContextTypes.DEFAULT_TYPE):
         testo += "(Nessun traguardo sbloccato ancora)"
     await update.message.reply_text(testo)
 
+async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    testo = (
+        "📜 *Comandi disponibili:*\n"
+        "/stats – Mostra quante volte Fabbio è stato evocato.\n"
+        "/top – Mostra la classifica dei Fabbionauti.\n"
+        "/me – Mostra i tuoi traguardi personali.\n"
+        "/fabbioquiz – Sfida il quiz mistico.\n"
+        "/help – Questo messaggio di aiuto."
+    )
+    await update.message.reply_text(testo, parse_mode="Markdown")
+
 async def telegram_webhook_handler(request):
     try:
         data = await request.json()
@@ -129,8 +140,8 @@ async def main():
     app.add_handler(CommandHandler("top", top))
     app.add_handler(CommandHandler("me", me))
     app.add_handler(CommandHandler("fabbioquiz", quiz))
-    app.add_handler(CallbackQueryHandler(quiz_callback, pattern=r"^quiz\|")
-)
+    app.add_handler(CommandHandler("help", help_command))
+    app.add_handler(CallbackQueryHandler(quiz_callback, pattern=r"^quiz\\|"))
 
     await app.initialize()
     web_app = web.Application()
