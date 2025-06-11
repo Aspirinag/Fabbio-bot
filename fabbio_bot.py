@@ -38,7 +38,7 @@ ACHIEVEMENTS = [
         ("🏆 Campione del Fabbio", "1000 Fabbii: entri nella leggenda."),
         ("🔮 Guardiano del Fabbio", "1100 Fabbii: proteggi il verbo."),
         ("💰 Archivista del Fabbio", "1200 Fabbii: conosci ogni incarnazione."),
-        ("📣 Meditante del Fabbiadosso", "1300 Fabbii: respiri ironia."),
+        ("🔔 Meditante del Fabbiadosso", "1300 Fabbii: respiri ironia."),
         ("🗓️ Scriba della Fabbiostoria", "1400 Fabbii: narri l'evoluzione."),
         ("🚀 Esploratore del Fabbiospazio", "1500 Fabbii: spingi oltre il cosmo."),
         ("👑 Fabbio Supremo", "1600 Fabbii: regni sul nonsense."),
