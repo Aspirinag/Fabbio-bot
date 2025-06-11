@@ -82,7 +82,31 @@ async def show_stats(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text("📊 Le tue statistiche non sono ancora disponibili.")
 
 async def me(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text(f"👤 Sei {update.effective_user.first_name}.")
+    user_id = str(update.effective_user.id)
+    key = f"user:{user_id}"
+    data = r.get(key)
+
+    if not data:
+        await update.message.reply_text("🙈 Nessuna evocazione trovata per te.")
+        return
+
+    user_data = json.loads(data)
+    count = user_data.get("count", 0)
+    username = user_data.get("username") or update.effective_user.first_name
+
+    best_title = None
+    for threshold, title, _ in reversed(ACHIEVEMENTS):
+        if count >= threshold:
+            best_title = title
+            break
+
+    reply = f"👤 Nome: {username}
+📈 Fabbii evocati: {count}"
+    if best_title:
+        reply += f"
+🏅 Achievement: {best_title}"
+
+    await update.message.reply_text(reply)
 
 async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text("ℹ️ Comandi disponibili: /stats, /top, /me, /fabbioquiz, /help")
