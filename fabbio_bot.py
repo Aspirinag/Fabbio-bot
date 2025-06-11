@@ -51,10 +51,10 @@ ACHIEVEMENTS = [
 
 # 🧠 Quiz Fabbioso
 QUIZ = [
-    {"question": "🌍 *Dove nasce il Fabbio?*", "options": ["Nel codice sorgente", "Nel cuore degli utenti", "Nel cloud", "Nel caos"]},
-    {"question": "🌈 *Cosa accade quando scrivi Fabbio sotto la luna piena?*", "options": ["Appare un admin", "Diventi un lupo man mano", "Crasha Telegram", "Nessuno lo sa"]},
+    {"question": "🌍 *Dove nasce il Fabbio?*", "options": ["Nel codice sorgente", "Nel buco del culo", "Da un uovo", "Nel caos"]},
+    {"question": "🌈 *Cosa accade quando scrivi Fabbio sotto la luna piena?*", "options": ["Muori, bestia", "Diventi un lupo man mano", "Crasha Telegram", "Nessuno lo sa"]},
     {"question": "📱 *Chi riceve il segnale del Fabbio?*", "options": ["Solo i degni", "Chi ha scritto 1000 volte", "Chi è online alle 3", "Tutti, ma solo una volta"]},
-    {"question": "🪤 *Cosa accade se pronunci Fabbio 3 volte allo specchio?*", "options": ["Me lo fai in mano", "Crash del cervello", "Nulla, solo tristezza", "Ti insulti da solo"]},
+    {"question": "🪴 *Cosa accade se pronunci Fabbio 3 volte allo specchio?*", "options": ["Me lo fai in mano", "Crash del cervello", "Nulla, solo tristezza", "Ti insulti da solo"]},
     {"question": "🧬 *Come purificarsi da un Fabbio scritto male?*", "options": ["Scriverne 10 giusti", "Chiedere perdono", "Ammazzarsi", "Non si può"]},
     {"question": "📦 *Cosa contiene il Sacro Archivio Fabbioso?*", "options": ["Tutti i messaggi cringe", "Le gif bannate", "Verità taciute", "Sticker dimenticati"]},
     {"question": "🪙 *Quanto vale un Fabbio?*", "options": ["1 BTC", "0", "Tutto", "Non ha prezzo"]},
@@ -71,7 +71,7 @@ async def quiz(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def quiz_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     await query.answer()
-    await query.edit_message_text("\ud83c\udf00 Fabbio ti prego, Fabbio.")
+    await query.edit_message_text("🌀 Fabbio ti prego, Fabbio.")
 
 async def show_stats(update: Update, context: ContextTypes.DEFAULT_TYPE):
     count = int(r.get("fabbio_count") or 0)
@@ -90,8 +90,7 @@ async def top(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not classifica:
         await update.message.reply_text("⛔️ Nessun evocatore trovato nella classifica.")
         return
-    testo = "👑 *Classifica dei Fabbionauti:*
-"
+    testo = "👑 *Classifica dei Fabbionauti:*\n"
     for i, (count, name) in enumerate(classifica[:10], 1):
         testo += f"{i}. {name} — {count} Fabbii\n"
     await update.message.reply_text(testo, parse_mode="Markdown")
