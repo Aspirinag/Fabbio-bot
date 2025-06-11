@@ -49,8 +49,25 @@ ACHIEVEMENTS = [
     ])
 ]
 
-# 😴 Funzione sonno
+QUIZ_QUESTIONS = [
+    {
+        "question": "Chi è Fabbio?",
+        "options": ["Un meme", "Un salvatore", "Una leggenda", "Tutte le precedenti"],
+        "answer": 3
+    },
+    {
+        "question": "Cosa si ottiene evocando Fabbio?",
+        "options": ["Pace", "Caos", "Luce eterna", "Dipende dal giorno"],
+        "answer": 3
+    },
+    {
+        "question": "Dove abita Fabbio?",
+        "options": ["Nel codice", "Nel cuore degli utenti", "Nel cloud", "Ovunque"],
+        "answer": 3
+    }
+]
 
+# 😴 Funzione sonno
 def is_bot_sleeping():
     now = datetime.now().time()
     return time(0, 40) <= now < time(8, 0)
@@ -61,7 +78,36 @@ async def blocked_if_sleeping(update: Update):
         return True
     return False
 
-# 🔝 Comando top
+async def show_stats(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    await update.message.reply_text("📊 Le tue statistiche non sono ancora disponibili.")
+
+async def me(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    await update.message.reply_text(f"👤 Sei {update.effective_user.first_name}.")
+
+async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    await update.message.reply_text("ℹ️ Comandi disponibili: /stats, /top, /me, /fabbioquiz, /help")
+
+async def quiz(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    question = random.choice(QUIZ_QUESTIONS)
+    keyboard = [
+        [InlineKeyboardButton(opt, callback_data=f"quiz|{i}|{question['answer']}")]
+        for i, opt in enumerate(question["options"])
+    ]
+    await update.message.reply_text(
+        question["question"],
+        reply_markup=InlineKeyboardMarkup(keyboard)
+    )
+
+async def quiz_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    query = update.callback_query
+    await query.answer()
+    parts = query.data.split("|")
+    selected = int(parts[1])
+    correct = int(parts[2])
+    if selected == correct:
+        await query.edit_message_text("✅ Corretto! Sei un vero conoscitore di Fabbio.")
+    else:
+        await query.edit_message_text("❌ Risposta sbagliata. Il Fabbio ti osserva.")
 
 async def top(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if await blocked_if_sleeping(update):
@@ -94,8 +140,6 @@ async def top(update: Update, context: ContextTypes.DEFAULT_TYPE):
     except Exception as e:
         logging.exception("Errore nella generazione della classifica")
         await update.message.reply_text("⚠️ Errore durante il recupero della classifica.")
-
-# 🌐 Webhook e main
 
 async def telegram_webhook_handler(request):
     try:
