@@ -49,7 +49,7 @@ ACHIEVEMENTS = [
     ])
 ]
 
-# 🧠 Quiz Fabbioso
+# 🧐 Quiz Fabbioso
 QUIZ = [
     {"question": "🌍 *Dove nasce il Fabbio?*", "options": ["Nel codice sorgente", "Nel buco del culo", "Da un uovo", "Nel caos"]},
     {"question": "🌈 *Cosa accade quando scrivi Fabbio sotto la luna piena?*", "options": ["Muori, bestia", "Diventi un lupo man mano", "Crasha Telegram", "Nessuno lo sa"]},
@@ -58,7 +58,7 @@ QUIZ = [
     {"question": "🧬 *Come purificarsi da un Fabbio scritto male?*", "options": ["Scriverne 10 giusti", "Chiedere perdono", "Ammazzarsi", "Non si può"]},
     {"question": "📦 *Cosa contiene il Sacro Archivio Fabbioso?*", "options": ["Tutti i messaggi cringe", "Le gif bannate", "Verità taciute", "Sticker dimenticati"]},
     {"question": "🪙 *Quanto vale un Fabbio?*", "options": ["1 BTC", "0", "Tutto", "Non ha prezzo"]},
-    {"question": "🕳 *Cosa c’è nel buco nero Fabbioso?*", "options": ["Contro-meme", "Boomer", "Ironia concentrata", "Nulla"]},
+    {"question": "🕳 *Cosa c'è nel buco nero Fabbioso?*", "options": ["Un pisellone", "Shocky79", "Ironia concentrata", "Nulla"]},
     {"question": "⚖ *Cosa pesa più: un Fabbio o mille parole?*", "options": ["Un Fabbio", "Le parole", "Uguali", "Dipende"]},
     {"question": "🧘 *Chi raggiunge il Nirvana del Fabbio?*", "options": ["Chi è coglione", "Jjolas", "Tua madre", "Solo tu"]}
 ]
@@ -90,7 +90,8 @@ async def top(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not classifica:
         await update.message.reply_text("⛔️ Nessun evocatore trovato nella classifica.")
         return
-    testo = "👑 *Classifica dei Fabbionauti:*\n"
+    testo = "👑 *Classifica dei Fabbionauti:*
+"
     for i, (count, name) in enumerate(classifica[:10], 1):
         testo += f"{i}. {name} — {count} Fabbii\n"
     await update.message.reply_text(testo, parse_mode="Markdown")
@@ -129,7 +130,7 @@ async def main():
     app.add_handler(CommandHandler("top", top))
     app.add_handler(CommandHandler("me", me))
     app.add_handler(CommandHandler("fabbioquiz", quiz))
-    app.add_handler(CallbackQueryHandler(quiz_callback, pattern=r"^quiz\\|"))
+    app.add_handler(CallbackQueryHandler(quiz_callback, pattern=r"^quiz\|") )
 
     await app.initialize()
     web_app = web.Application()
