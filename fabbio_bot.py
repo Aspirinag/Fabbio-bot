@@ -99,11 +99,13 @@ async def show_stats(update: Update, context: ContextTypes.DEFAULT_TYPE):
     else:
         total_count = int(total_count)
 
-    reply = f"📊 Statistiche di {username}
+    reply = (
+        f"📊 Statistiche di {username}
 "
-    reply += f"🔢 Evocazioni personali: {count}
+        f"🔢 Evocazioni personali: {count}
 "
-    reply += f"🌍 Evocazioni totali: {total_count}"
+        f"🌍 Evocazioni totali: {total_count}"
+    )
 
     await update.message.reply_text(reply)
 
