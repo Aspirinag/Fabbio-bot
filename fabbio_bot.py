@@ -28,33 +28,33 @@ ACHIEVEMENTS = [
     ((i+1) * 100, title, desc) for i, (title, desc) in enumerate([
         ("👶 Neofabbio", "Hai raggiunto 100 evocazioni. Il tuo viaggio inizia ora."),
         ("✨ Risvegliato", "200 Fabbii scritti: percepisci il segnale."),
-        ("🔀 Discepolo della Fabbiosofia", "300 Fabbii: studi i testi antichi."),
+        ("🌀 Discepolo della Fabbiosofia", "300 Fabbii: studi i testi antichi."),
         ("📱 Portatore di Fabbio", "400 Fabbii: diffondi la parola in ogni chat."),
-        ("🨮 Mistico del Meme", "500 Fabbii: vedi oltre le emoji."),
+        ("🤮 Mistico del Meme", "500 Fabbii: vedi oltre le emoji."),
         ("🤠 Evocatore di Caos", "600 Fabbii: l'entropia ti segue."),
         ("🌌 Oracolo di Fabbiolandia", "700 Fabbii: le visioni iniziano."),
         ("📣 Trombettiere del Fabbio", "800 Fabbii: annunci la verità."),
-        ("🧔 Cavalcatore del Meme", "900 Fabbii: domini l'onda dell'assurdo."),
+        ("🦄 Cavalcatore del Meme", "900 Fabbii: domini l'onda dell'assurdo."),
         ("🏆 Campione del Fabbio", "1000 Fabbii: entri nella leggenda."),
         ("🔮 Guardiano del Fabbio", "1100 Fabbii: proteggi il verbo."),
-        ("💰 Archivista del Meme", "1200 Fabbii: conosci ogni incarnazione."),
-        ("🛎️ Meditante del Paradosso", "1300 Fabbii: respiri ironia."),
+        ("📀 Archivista del Meme", "1200 Fabbii: conosci ogni incarnazione."),
+        ("🛏️ Meditante del Paradosso", "1300 Fabbii: respiri ironia."),
         ("📅 Scriba della Fabbiostoria", "1400 Fabbii: narri l'evoluzione."),
         ("🚀 Esploratore del Fabbiospazio", "1500 Fabbii: spingi oltre il cosmo."),
         ("👑 Fabbio Supremo", "1600 Fabbii: regni sul nonsense."),
         ("🤖 Automa del Meme", "1700 Fabbii: scrivi per riflesso sacro."),
         ("💡 Illuminato dal Fabbio", "1800 Fabbii: capisci tutto, e nulla."),
-        ("🚁 Fabbinauta", "1900 Fabbii: navighi nel vuoto sacro."),
+        ("🛰 Fabbinauta", "1900 Fabbii: navighi nel vuoto sacro."),
         ("🌟 Entità Fabbiosa", "2000 Fabbii: sei uno col Fabbio.")
     ])
 ]
 
-# 🧐 Quiz Fabbioso
+# 🧠 Quiz Fabbioso
 QUIZ = [
     {"question": "🌍 *Dove nasce il Fabbio?*", "options": ["Nel codice sorgente", "Nel cuore degli utenti", "Nel cloud", "Nel caos"]},
     {"question": "🌈 *Cosa accade quando scrivi Fabbio sotto la luna piena?*", "options": ["Appare un admin", "Si risveglia l’antico meme", "Crasha Telegram", "Nessuno lo sa"]},
     {"question": "📱 *Chi riceve il segnale del Fabbio?*", "options": ["Solo i degni", "Chi ha scritto 1000 volte", "Chi è online alle 3", "Tutti, ma solo una volta"]},
-    {"question": "🪴 *Cosa accade se pronunci Fabbio 3 volte allo specchio?*", "options": ["Compare un meme", "Crash del cervello", "Nulla, solo tristezza", "Ti insulti da solo"]},
+    {"question": "🪤 *Cosa accade se pronunci Fabbio 3 volte allo specchio?*", "options": ["Compare un meme", "Crash del cervello", "Nulla, solo tristezza", "Ti insulti da solo"]},
     {"question": "🧬 *Come purificarsi da un Fabbio scritto male?*", "options": ["Scriverne 10 giusti", "Chiedere perdono", "Autoironizzarsi", "Non si può"]},
     {"question": "📦 *Cosa contiene il Sacro Archivio Fabbioso?*", "options": ["Tutti i messaggi cringe", "Le gif bannate", "Verità taciute", "Sticker dimenticati"]},
     {"question": "🪙 *Quanto vale un Fabbio?*", "options": ["1 BTC", "0", "Tutto", "Non ha prezzo"]},
@@ -80,8 +80,7 @@ async def top(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not classifica:
         await update.message.reply_text("⛔️ Nessun evocatore trovato nella classifica.")
         return
-    testo = "👑 *Classifica dei Fabbionauti:*
-"
+    testo = "👑 *Classifica dei Fabbionauti:*\n"
     for i, (count, name) in enumerate(classifica[:10], 1):
         testo += f"{i}. {name} — {count} Fabbii\n"
     await update.message.reply_text(testo, parse_mode="Markdown")
