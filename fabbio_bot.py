@@ -30,16 +30,16 @@ ACHIEVEMENTS = [
         ("✨ Risvegliato", "200 Fabbii scritti: percepisci il segnale."),
         ("🔀 Discepolo della Fabbiosofia", "300 Fabbii: studi i testi antichi."),
         ("📱 Portatore di Fabbio", "400 Fabbii: diffondi la parola in ogni chat."),
-        ("🨮 Mistico del Meme", "500 Fabbii: vedi oltre le emoji."),
+        ("🐮 Mistico del Meme", "500 Fabbii: vedi oltre le emoji."),
         ("🤠 Evocatore di Caos", "600 Fabbii: l'entropia ti segue."),
         ("🌌 Oracolo di Fabbiolandia", "700 Fabbii: le visioni iniziano."),
         ("📣 Trombettiere del Fabbio", "800 Fabbii: annunci la verità."),
         ("🧄 Cavalcatore del Meme", "900 Fabbii: domini l'onda dell'assurdo."),
         ("🏆 Campione del Fabbio", "1000 Fabbii: entri nella leggenda."),
         ("🔮 Guardiano del Fabbio", "1100 Fabbii: proteggi il verbo."),
-        ("📀 Archivista del Fabbio", "1200 Fabbii: conosci ogni incarnazione."),
-        ("🛎️ Meditante del Fabbiadosso", "1300 Fabbii: respiri ironia."),
-        ("📅 Scriba della Fabbiostoria", "1400 Fabbii: narri l'evoluzione."),
+        ("💰 Archivista del Fabbio", "1200 Fabbii: conosci ogni incarnazione."),
+        ("📣 Meditante del Fabbiadosso", "1300 Fabbii: respiri ironia."),
+        ("🗓️ Scriba della Fabbiostoria", "1400 Fabbii: narri l'evoluzione."),
         ("🚀 Esploratore del Fabbiospazio", "1500 Fabbii: spingi oltre il cosmo."),
         ("👑 Fabbio Supremo", "1600 Fabbii: regni sul nonsense."),
         ("🤖 Fabbio Robot", "1700 Fabbii: scrivi per riflesso sacro."),
@@ -52,15 +52,15 @@ ACHIEVEMENTS = [
 # 🧠 Quiz Fabbioso
 QUIZ = [
     {"question": "🌍 *Dove nasce il Fabbio?*", "options": ["Nel codice sorgente", "Nel cuore degli utenti", "Nel cloud", "Nel caos"]},
-    {"question": "🌈 *Cosa accade quando scrivi Fabbio sotto la luna piena?*", "options": ["Appare un admin", "Si risveglia l’antico meme", "Crasha Telegram", "Nessuno lo sa"]},
+    {"question": "🌈 *Cosa accade quando scrivi Fabbio sotto la luna piena?*", "options": ["Appare un admin", "Diventi un lupo man mano", "Crasha Telegram", "Nessuno lo sa"]},
     {"question": "📱 *Chi riceve il segnale del Fabbio?*", "options": ["Solo i degni", "Chi ha scritto 1000 volte", "Chi è online alle 3", "Tutti, ma solo una volta"]},
-    {"question": "🪤 *Cosa accade se pronunci Fabbio 3 volte allo specchio?*", "options": ["Compare un meme", "Crash del cervello", "Nulla, solo tristezza", "Ti insulti da solo"]},
+    {"question": "🪤 *Cosa accade se pronunci Fabbio 3 volte allo specchio?*", "options": ["Me lo fai in mano", "Crash del cervello", "Nulla, solo tristezza", "Ti insulti da solo"]},
     {"question": "🧬 *Come purificarsi da un Fabbio scritto male?*", "options": ["Scriverne 10 giusti", "Chiedere perdono", "Ammazzarsi", "Non si può"]},
-    {"question": "📦 *Cosa contiene il Sacro Archivio Fabbioso?*", "options": ["Immagini di Fabbio nudo", "Le gif bannate", "Verità taciute", "Sticker dimenticati"]},
+    {"question": "📦 *Cosa contiene il Sacro Archivio Fabbioso?*", "options": ["Tutti i messaggi cringe", "Le gif bannate", "Verità taciute", "Sticker dimenticati"]},
     {"question": "🪙 *Quanto vale un Fabbio?*", "options": ["1 BTC", "0", "Tutto", "Non ha prezzo"]},
-    {"question": "🕳 *Cosa c’è nel buco nero Fabbioso?*", "options": ["Un cazzo", "Giolas", "Sesso", "Nulla"]},
+    {"question": "🕳 *Cosa c’è nel buco nero Fabbioso?*", "options": ["Contro-meme", "Boomer", "Ironia concentrata", "Nulla"]},
     {"question": "⚖ *Cosa pesa più: un Fabbio o mille parole?*", "options": ["Un Fabbio", "Le parole", "Uguali", "Dipende"]},
-    {"question": "🧘 *Chi raggiunge il Nirvana del Fabbio?*", "options": ["Un coglione", "Fabbio", "Fabbio ti prego", "Ammazzati"]}
+    {"question": "🧘 *Chi raggiunge il Nirvana del Fabbio?*", "options": ["Chi è coglione", "Jjolas", "Tua madre", "Solo tu"]}
 ]
 
 async def quiz(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -71,7 +71,7 @@ async def quiz(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def quiz_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     await query.answer()
-    await query.edit_message_text("🌀 Fabbio ti prego, Fabbio.")
+    await query.edit_message_text("\ud83c\udf00 Fabbio ti prego, Fabbio.")
 
 async def show_stats(update: Update, context: ContextTypes.DEFAULT_TYPE):
     count = int(r.get("fabbio_count") or 0)
@@ -90,7 +90,8 @@ async def top(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not classifica:
         await update.message.reply_text("⛔️ Nessun evocatore trovato nella classifica.")
         return
-    testo = "👑 *Classifica dei Fabbionauti:*\n"
+    testo = "👑 *Classifica dei Fabbionauti:*
+"
     for i, (count, name) in enumerate(classifica[:10], 1):
         testo += f"{i}. {name} — {count} Fabbii\n"
     await update.message.reply_text(testo, parse_mode="Markdown")
@@ -129,7 +130,7 @@ async def main():
     app.add_handler(CommandHandler("top", top))
     app.add_handler(CommandHandler("me", me))
     app.add_handler(CommandHandler("fabbioquiz", quiz))
-    app.add_handler(CallbackQueryHandler(quiz_callback, pattern="^quiz|"))
+    app.add_handler(CallbackQueryHandler(quiz_callback, pattern=r"^quiz\\|"))
 
     await app.initialize()
     web_app = web.Application()
