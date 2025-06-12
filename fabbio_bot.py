@@ -9,6 +9,7 @@ import asyncio
 import nest_asyncio
 from telegram import Update, InlineKeyboardMarkup, InlineKeyboardButton
 from telegram.ext import Application, CommandHandler, CallbackQueryHandler, ContextTypes, filters
+from telegram.helpers import escape_markdown
 
 # 🔧 Config
 BOT_TOKEN = os.environ.get("BOT_TOKEN")
@@ -23,7 +24,7 @@ app = None
 r = redis.Redis.from_url(REDIS_URL, decode_responses=True)
 ALIASES = ["fabbio", "fabbiotron", "fabbiocop", "fbb"]
 
-# 🏆 Achievement personalizzati
+# 🏆 Achievements
 ACHIEVEMENTS = [
     ((i+1) * 100, title, desc) for i, (title, desc) in enumerate([
         ("👶 Neofabbio", "Hai raggiunto 100 evocazioni. Il tuo viaggio inizia ora."),
@@ -156,7 +157,7 @@ async def quiz_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     else:
         await query.edit_message_text("❌ Risposta sbagliata. Il Fabbio ti osserva.")
 
-# ✅ Funzione top migliorata
+# ✅ TOP con MarkdownV2 + escape
 async def top(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if await blocked_if_sleeping(update):
         return
@@ -165,11 +166,8 @@ async def top(update: Update, context: ContextTypes.DEFAULT_TYPE):
         user_keys = list(r.scan_iter(match="user:*"))
         classifica = []
 
-        logging.info(f"[TOP] Trovate {len(user_keys)} chiavi utente.")
-
         for key in user_keys:
             value = r.get(key)
-            logging.debug(f"[TOP] Chiave {key} => {value}")
             if not value:
                 continue
 
@@ -188,20 +186,21 @@ async def top(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
         classifica.sort(reverse=True)
 
-        testo = "\U0001F451 *Classifica dei Fabbionauti:*\n"
+        testo = "🏆 *Classifica dei Fabbionauti:*\n"
         for i, (count, name) in enumerate(classifica[:10], 1):
-            testo += f"{i}. {name} — {count} Fabbii\n"
+            safe_name = escape_markdown(name, version=2)
+            testo += f"{i}. {safe_name} — {count} Fabbii\n"
 
         if len(testo) > 4000:
             testo = testo[:3990] + "\n[...]"
 
-        await update.message.reply_text(testo, parse_mode="Markdown")
+        await update.message.reply_text(testo, parse_mode="MarkdownV2")
 
     except Exception as e:
         logging.exception("[TOP] Errore durante il recupero della classifica")
         await update.message.reply_text("⚠️ Errore durante il recupero della classifica.")
 
-# ✅ Comando admin /ripulisci
+# ✅ RIPULISCI
 async def ripulisci(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = update.effective_user.id
     if user_id not in ADMIN_IDS:
