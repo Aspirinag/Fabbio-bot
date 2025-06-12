@@ -122,19 +122,66 @@ async def ripulisci_avanzato(update: Update, context: ContextTypes.DEFAULT_TYPE)
 
 # 🔝 /top
 async def top(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text("🏆 Classifica in costruzione...")
+    users = []
+    for key in r.scan_iter("user:*"):
+        data = json.loads(r.get(key))
+        users.append((data.get("count", 0), data.get("username") or key.split(":", 1)[-1]))
+    top_users = sorted(users, reverse=True)[:10]
+    text = "\n".join([f"{i+1}. {u} — {c}" for i, (c, u) in enumerate(top_users)]) or "Nessun evocatore registrato."
+    await update.message.reply_text(f"🏆 *Classifica degli evocatori*\n{text}", parse_mode="Markdown")
 
 # ❓ /fabbioquiz
 async def fabbioquiz(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text("🧠 Il quiz tornerà presto, studia la Fabbiologia!")
+    q = random.choice(QUIZ_QUESTIONS)
+    keyboard = [
+        [InlineKeyboardButton(opt, callback_data=f"quiz|{i}|{q['answer']}")]
+        for i, opt in enumerate(q["options"])
+    ]
+    await update.message.reply_text(q["question"], reply_markup=InlineKeyboardMarkup(keyboard))
+
+async def quiz_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    query = update.callback_query
+    await query.answer()
+    _, selected, correct = query.data.split("|")
+    selected, correct = int(selected), int(correct)
+    result = "✅ Giusto!" if selected == correct else "❌ Sbagliato!"
+    await query.edit_message_text(f"{result} La risposta corretta era: {correct+1}.")
 
 # 📦 /me
 async def me(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text("📦 Le tue statistiche personali saranno qui.")
+    user_id = update.effective_user.id
+    key = f"user:{user_id}"
+    user_data = json.loads(r.get(key) or '{}')
+    count = user_data.get("count", 0)
+    username = user_data.get("username", update.effective_user.username or "?")
+    await update.message.reply_text(f"📦 {username}, hai evocato Fabbio {count} volte.")
 
 # 🙌 /evangelizza
 async def evangelizza(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text("📣 Porta il verbo di Fabbio nei gruppi!")
+    frasi = [
+        "📣 Portate il verbo del Fabbio a ogni angolo della terra!",
+        "✨ Ogni Fabbio conta. Anche questo.",
+        "🧿 Solo chi evoca, capisce.",
+        "🌠 Un Fabbio al giorno toglie il logorio di torno."
+    ]
+    await update.message.reply_text(random.choice(frasi))
+
+# 📈 Conteggio evocazioni
+async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if not update.message or not update.message.text:
+        return
+
+    text = update.message.text.lower()
+    if any(alias in text for alias in ALIASES):
+        if await blocked_if_sleeping(update):
+            return
+        user_id = update.effective_user.id
+        username = update.effective_user.username or update.effective_user.first_name or "?"
+        key = f"user:{user_id}"
+        user_data = json.loads(r.get(key) or '{}')
+        user_data["count"] = user_data.get("count", 0) + 1
+        user_data["username"] = username
+        r.set(key, json.dumps(user_data))
 
 # 🗵️ Webhook handler
 async def telegram_webhook_handler(request):
@@ -157,9 +204,10 @@ async def main():
     app.add_handler(CommandHandler("ripulisci_avanzato", ripulisci_avanzato))
     app.add_handler(CommandHandler("top", top))
     app.add_handler(CommandHandler("fabbioquiz", fabbioquiz))
+    app.add_handler(CallbackQueryHandler(quiz_callback, pattern=r"^quiz\\|"))
     app.add_handler(CommandHandler("me", me))
     app.add_handler(CommandHandler("evangelizza", evangelizza))
-    app.add_handler(MessageHandler(filters.ALL, lambda u, c: logging.info(f"[DEBUG] Update: {u}")))
+    app.add_handler(MessageHandler(filters.TEXT & (~filters.COMMAND), handle_message))
 
     await app.initialize()
     web_app = web.Application()
