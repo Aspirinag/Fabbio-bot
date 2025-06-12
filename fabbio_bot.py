@@ -120,6 +120,22 @@ async def ripulisci_avanzato(update: Update, context: ContextTypes.DEFAULT_TYPE)
         parse_mode="MarkdownV2"
     )
 
+# 🔝 /top
+async def top(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    await update.message.reply_text("🏆 Classifica in costruzione...")
+
+# ❓ /fabbioquiz
+async def fabbioquiz(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    await update.message.reply_text("🧠 Il quiz tornerà presto, studia la Fabbiologia!")
+
+# 📦 /me
+async def me(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    await update.message.reply_text("📦 Le tue statistiche personali saranno qui.")
+
+# 🙌 /evangelizza
+async def evangelizza(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    await update.message.reply_text("📣 Porta il verbo di Fabbio nei gruppi!")
+
 # 🗵️ Webhook handler
 async def telegram_webhook_handler(request):
     try:
@@ -139,6 +155,10 @@ async def main():
 
     app.add_handler(CommandHandler("start", start))
     app.add_handler(CommandHandler("ripulisci_avanzato", ripulisci_avanzato))
+    app.add_handler(CommandHandler("top", top))
+    app.add_handler(CommandHandler("fabbioquiz", fabbioquiz))
+    app.add_handler(CommandHandler("me", me))
+    app.add_handler(CommandHandler("evangelizza", evangelizza))
     app.add_handler(MessageHandler(filters.ALL, lambda u, c: logging.info(f"[DEBUG] Update: {u}")))
 
     await app.initialize()
