@@ -157,36 +157,46 @@ async def quiz_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     else:
         await query.edit_message_text("❌ Risposta sbagliata. Il Fabbio ti osserva.")
 
+# ✅ Funzione top con gestione errori migliorata
 async def top(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if await blocked_if_sleeping(update):
         return
+
     try:
         user_keys = list(r.scan_iter(match="user:*"))
         classifica = []
+
         for key in user_keys:
             value = r.get(key)
             if not value:
                 continue
+
             try:
                 user_data = json.loads(value)
                 count = user_data.get("count", 0)
                 username = user_data.get("username") or key.split(":", 1)[-1]
                 classifica.append((count, username))
             except Exception as e:
-                logging.warning(f"Errore parsing Redis ({key}): {e}")
+                logging.warning(f"[TOP] Errore parsing JSON per la chiave {key}: {e}\nValore grezzo: {value}")
+                continue
 
-        classifica.sort(reverse=True)
         if not classifica:
             await update.message.reply_text("⛔️ Nessun evocatore trovato nella classifica.")
             return
+
+        classifica.sort(reverse=True)
 
         testo = "\U0001F451 *Classifica dei Fabbionauti:*\n"
         for i, (count, name) in enumerate(classifica[:10], 1):
             testo += f"{i}. {name} — {count} Fabbii\n"
 
+        if len(testo) > 4000:
+            testo = testo[:3990] + "\n[...]"
+
         await update.message.reply_text(testo, parse_mode="Markdown")
+
     except Exception as e:
-        logging.exception("Errore nella generazione della classifica")
+        logging.exception("[TOP] Errore nella generazione della classifica")
         await update.message.reply_text("⚠️ Errore durante il recupero della classifica.")
 
 async def telegram_webhook_handler(request):
