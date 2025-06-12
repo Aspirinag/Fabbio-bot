@@ -8,7 +8,7 @@ from aiohttp import web
 import asyncio
 import nest_asyncio
 from telegram import Update, InlineKeyboardMarkup, InlineKeyboardButton
-from telegram.ext import Application, CommandHandler, CallbackQueryHandler, ContextTypes, filters
+from telegram.ext import Application, CommandHandler, CallbackQueryHandler, MessageHandler, ContextTypes, filters
 from telegram.helpers import escape_markdown
 
 # 🔧 Config
@@ -35,7 +35,7 @@ ACHIEVEMENTS = [
         ("🤠 Evocatore di Caos", "600 Fabbii: l'entropia ti segue."),
         ("🌌 Oracolo di Fabbiolandia", "700 Fabbii: le visioni iniziano."),
         ("📣 Trombettiere del Fabbio", "800 Fabbii: annunci la verità."),
-        ("🧄 Cavalcatore del Meme", "900 Fabbii: domini l'onda dell'assurdo."),
+        ("🫔 Cavalcatore del Meme", "900 Fabbii: domini l'onda dell'assurdo."),
         ("🏆 Campione del Fabbio", "1000 Fabbii: entri nella leggenda."),
         ("🔮 Guardiano del Fabbio", "1100 Fabbii: proteggi il verbo."),
         ("💰 Archivista del Fabbio", "1200 Fabbii: conosci ogni incarnazione."),
@@ -74,11 +74,15 @@ def is_bot_sleeping():
 
 async def blocked_if_sleeping(update: Update):
     if is_bot_sleeping():
-        await update.message.reply_text("🛌 Sto dormendo. Riprova dalle 8 in poi.")
+        await update.message.reply_text("📌 Sto dormendo. Riprova dalle 8 in poi.")
         return True
     return False
 
-# 🚜 Comando /ripulisci_avanzato
+# 🚀 /start
+async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    await update.message.reply_text("👋 Ciao! Il bot è attivo. Usa /ripulisci_avanzato se sei admin.")
+
+# 🧹 /ripulisci_avanzato
 async def ripulisci_avanzato(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = update.effective_user.id
     if user_id not in ADMIN_IDS:
@@ -116,13 +120,26 @@ async def ripulisci_avanzato(update: Update, context: ContextTypes.DEFAULT_TYPE)
         parse_mode="MarkdownV2"
     )
 
-# ➕ Aggiunta dell'handler nel main()
+# 🗵️ Webhook handler
+async def telegram_webhook_handler(request):
+    try:
+        data = await request.json()
+        update = Update.de_json(data, app.bot)
+        await app.process_update(update)
+        return web.Response(text="OK")
+    except Exception as e:
+        logging.exception("Errore nel webhook handler:")
+        return web.Response(status=500, text="Errore")
+
+# ▶️ main
 async def main():
     global app
     logging.basicConfig(level=logging.INFO)
     app = Application.builder().token(BOT_TOKEN).build()
 
+    app.add_handler(CommandHandler("start", start))
     app.add_handler(CommandHandler("ripulisci_avanzato", ripulisci_avanzato))
+    app.add_handler(MessageHandler(filters.ALL, lambda u, c: logging.info(f"[DEBUG] Update: {u}")))
 
     await app.initialize()
     web_app = web.Application()
@@ -139,16 +156,6 @@ async def main():
 
     while True:
         await asyncio.sleep(3600)
-
-async def telegram_webhook_handler(request):
-    try:
-        data = await request.json()
-        update = Update.de_json(data, app.bot)
-        await app.process_update(update)
-        return web.Response(text="OK")
-    except Exception as e:
-        logging.exception("Errore nel webhook handler:")
-        return web.Response(status=500, text="Errore")
 
 if __name__ == "__main__":
     nest_asyncio.apply()
