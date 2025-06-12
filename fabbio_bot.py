@@ -8,7 +8,7 @@ from aiohttp import web
 import asyncio
 import nest_asyncio
 from telegram import Update, InlineKeyboardMarkup, InlineKeyboardButton
-from telegram.ext import Application, CommandHandler, MessageHandler, CallbackQueryHandler, ContextTypes, filters
+from telegram.ext import Application, CommandHandler, CallbackQueryHandler, ContextTypes, filters
 
 # 🔧 Config
 BOT_TOKEN = os.environ.get("BOT_TOKEN")
@@ -67,7 +67,6 @@ QUIZ_QUESTIONS = [
     }
 ]
 
-# 😴 Funzione sonno
 def is_bot_sleeping():
     now = datetime.now().time()
     return time(0, 40) <= now < time(8, 0)
@@ -133,7 +132,7 @@ async def me(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(reply)
 
 async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text("ℹ️ Comandi disponibili: /stats, /top, /me, /fabbioquiz, /help")
+    await update.message.reply_text("ℹ️ Comandi disponibili: /stats, /top, /me, /fabbioquiz, /ripulisci, /help")
 
 async def quiz(update: Update, context: ContextTypes.DEFAULT_TYPE):
     question = random.choice(QUIZ_QUESTIONS)
@@ -157,7 +156,7 @@ async def quiz_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     else:
         await query.edit_message_text("❌ Risposta sbagliata. Il Fabbio ti osserva.")
 
-# ✅ Funzione top con gestione errori migliorata
+# ✅ Funzione top migliorata
 async def top(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if await blocked_if_sleeping(update):
         return
@@ -166,8 +165,11 @@ async def top(update: Update, context: ContextTypes.DEFAULT_TYPE):
         user_keys = list(r.scan_iter(match="user:*"))
         classifica = []
 
+        logging.info(f"[TOP] Trovate {len(user_keys)} chiavi utente.")
+
         for key in user_keys:
             value = r.get(key)
+            logging.debug(f"[TOP] Chiave {key} => {value}")
             if not value:
                 continue
 
@@ -177,7 +179,7 @@ async def top(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 username = user_data.get("username") or key.split(":", 1)[-1]
                 classifica.append((count, username))
             except Exception as e:
-                logging.warning(f"[TOP] Errore parsing JSON per la chiave {key}: {e}\nValore grezzo: {value}")
+                logging.warning(f"[TOP] Errore parsing JSON per {key}: {e} (valore: {value})")
                 continue
 
         if not classifica:
@@ -196,8 +198,34 @@ async def top(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text(testo, parse_mode="Markdown")
 
     except Exception as e:
-        logging.exception("[TOP] Errore nella generazione della classifica")
+        logging.exception("[TOP] Errore durante il recupero della classifica")
         await update.message.reply_text("⚠️ Errore durante il recupero della classifica.")
+
+# ✅ Comando admin /ripulisci
+async def ripulisci(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    user_id = update.effective_user.id
+    if user_id not in ADMIN_IDS:
+        await update.message.reply_text("⛔️ Solo gli amministratori possono usare questo comando.")
+        return
+
+    chiavi_eliminate = 0
+    chiavi_controllate = 0
+
+    for key in r.scan_iter("user:*"):
+        chiavi_controllate += 1
+        value = r.get(key)
+        try:
+            json.loads(value)
+        except Exception as e:
+            r.delete(key)
+            chiavi_eliminate += 1
+            logging.warning(f"[RIPULISCI] Rimossa chiave corrotta: {key} (valore: {value})")
+
+    await update.message.reply_text(
+        f"🧹 Pulizia completata!\n"
+        f"🔍 Chiavi controllate: {chiavi_controllate}\n"
+        f"🗑️ Chiavi eliminate: {chiavi_eliminate}"
+    )
 
 async def telegram_webhook_handler(request):
     try:
@@ -219,6 +247,7 @@ async def main():
     app.add_handler(CommandHandler("me", me))
     app.add_handler(CommandHandler("fabbioquiz", quiz))
     app.add_handler(CommandHandler("help", help_command))
+    app.add_handler(CommandHandler("ripulisci", ripulisci))
     app.add_handler(CallbackQueryHandler(quiz_callback, pattern=r"^quiz\|"))
 
     await app.initialize()
