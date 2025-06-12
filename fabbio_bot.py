@@ -74,137 +74,15 @@ def is_bot_sleeping():
 
 async def blocked_if_sleeping(update: Update):
     if is_bot_sleeping():
-        await update.message.reply_text("😴 Sto dormendo. Riprova dalle 8 in poi.")
+        await update.message.reply_text("🛌 Sto dormendo. Riprova dalle 8 in poi.")
         return True
     return False
 
-async def show_stats(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    user_id = str(update.effective_user.id)
-    key = f"user:{user_id}"
-    data = r.get(key)
-
-    if not data:
-        await update.message.reply_text("🙈 Nessuna evocazione trovata per te.")
-        return
-
-    user_data = json.loads(data)
-    count = user_data.get("count", 0)
-    username = user_data.get("username") or update.effective_user.first_name
-
-    total_key = "global:total"
-    total_count = r.get(total_key)
-    if total_count is None:
-        total_count = 19752
-        r.set(total_key, total_count)
-    else:
-        total_count = int(total_count)
-
-    reply = (
-        f"📊 Statistiche di {username}\n"
-        f"🔢 Evocazioni personali: {count}\n"
-        f"🌍 Evocazioni totali: {total_count}"
-    )
-
-    await update.message.reply_text(reply)
-
-async def me(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    user_id = str(update.effective_user.id)
-    key = f"user:{user_id}"
-    data = r.get(key)
-
-    if not data:
-        await update.message.reply_text("🙈 Nessuna evocazione trovata per te.")
-        return
-
-    user_data = json.loads(data)
-    count = user_data.get("count", 0)
-    username = user_data.get("username") or update.effective_user.first_name
-
-    best_title = None
-    for threshold, title, _ in reversed(ACHIEVEMENTS):
-        if count >= threshold:
-            best_title = title
-            break
-
-    reply = f"👤 Nome: {username}\n📈 Fabbii evocati: {count}"
-    if best_title:
-        reply += f"\n🏅 Achievement: {best_title}"
-
-    await update.message.reply_text(reply)
-
-async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text("ℹ️ Comandi disponibili: /stats, /top, /me, /fabbioquiz, /ripulisci, /help")
-
-async def quiz(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    question = random.choice(QUIZ_QUESTIONS)
-    keyboard = [
-        [InlineKeyboardButton(opt, callback_data=f"quiz|{i}|{question['answer']}")]
-        for i, opt in enumerate(question["options"])
-    ]
-    await update.message.reply_text(
-        question["question"],
-        reply_markup=InlineKeyboardMarkup(keyboard)
-    )
-
-async def quiz_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    query = update.callback_query
-    await query.answer()
-    parts = query.data.split("|")
-    selected = int(parts[1])
-    correct = int(parts[2])
-    if selected == correct:
-        await query.edit_message_text("✅ Corretto! Sei un vero conoscitore di Fabbio.")
-    else:
-        await query.edit_message_text("❌ Risposta sbagliata. Il Fabbio ti osserva.")
-
-# ✅ TOP con MarkdownV2 + escape
-async def top(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    if await blocked_if_sleeping(update):
-        return
-
-    try:
-        user_keys = list(r.scan_iter(match="user:*"))
-        classifica = []
-
-        for key in user_keys:
-            value = r.get(key)
-            if not value:
-                continue
-
-            try:
-                user_data = json.loads(value)
-                count = user_data.get("count", 0)
-                username = user_data.get("username") or key.split(":", 1)[-1]
-                classifica.append((count, username))
-            except Exception as e:
-                logging.warning(f"[TOP] Errore parsing JSON per {key}: {e} (valore: {value})")
-                continue
-
-        if not classifica:
-            await update.message.reply_text("⛔️ Nessun evocatore trovato nella classifica.")
-            return
-
-        classifica.sort(reverse=True)
-
-        testo = "🏆 *Classifica dei Fabbionauti:*\n"
-        for i, (count, name) in enumerate(classifica[:10], 1):
-            safe_name = escape_markdown(name, version=2)
-            testo += f"{i}. {safe_name} — {count} Fabbii\n"
-
-        if len(testo) > 4000:
-            testo = testo[:3990] + "\n[...]"
-
-        await update.message.reply_text(testo, parse_mode="MarkdownV2")
-
-    except Exception as e:
-        logging.exception("[TOP] Errore durante il recupero della classifica")
-        await update.message.reply_text("⚠️ Errore durante il recupero della classifica.")
-
-# ✅ RIPULISCI
-async def ripulisci(update: Update, context: ContextTypes.DEFAULT_TYPE):
+# 🚜 Comando /ripulisci_avanzato
+async def ripulisci_avanzato(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = update.effective_user.id
     if user_id not in ADMIN_IDS:
-        await update.message.reply_text("⛔️ Solo gli amministratori possono usare questo comando.")
+        await update.message.reply_text("❌ Solo gli amministratori possono usare questo comando.")
         return
 
     chiavi_eliminate = 0
@@ -214,40 +92,37 @@ async def ripulisci(update: Update, context: ContextTypes.DEFAULT_TYPE):
         chiavi_controllate += 1
         value = r.get(key)
         try:
-            json.loads(value)
+            user_data = json.loads(value)
+            count = user_data.get("count")
+            username = user_data.get("username") or key.split(":", 1)[-1]
+
+            if not isinstance(count, int) or not isinstance(username, str) or not username.strip():
+                r.delete(key)
+                chiavi_eliminate += 1
+                logging.warning(f"[RIPULISCI_ADV] Rimossa chiave non valida: {key} — count: {count}, username: {username}")
         except Exception as e:
             r.delete(key)
             chiavi_eliminate += 1
-            logging.warning(f"[RIPULISCI] Rimossa chiave corrotta: {key} (valore: {value})")
+            logging.warning(f"[RIPULISCI_ADV] Rimossa chiave JSON corrotto: {key} (valore: {value}) — Errore: {e}")
 
-    await update.message.reply_text(
-        f"🧹 Pulizia completata!\n"
+    report = (
+        f"🚹 Pulizia avanzata completata!\n"
         f"🔍 Chiavi controllate: {chiavi_controllate}\n"
         f"🗑️ Chiavi eliminate: {chiavi_eliminate}"
     )
 
-async def telegram_webhook_handler(request):
-    try:
-        data = await request.json()
-        update = Update.de_json(data, app.bot)
-        await app.process_update(update)
-        return web.Response(text="OK")
-    except Exception as e:
-        logging.exception("Errore nel webhook handler:")
-        return web.Response(status=500, text="Errore")
+    await update.message.reply_text(
+        escape_markdown(report, version=2),
+        parse_mode="MarkdownV2"
+    )
 
+# ➕ Aggiunta dell'handler nel main()
 async def main():
     global app
     logging.basicConfig(level=logging.INFO)
     app = Application.builder().token(BOT_TOKEN).build()
 
-    app.add_handler(CommandHandler("stats", show_stats))
-    app.add_handler(CommandHandler("top", top))
-    app.add_handler(CommandHandler("me", me))
-    app.add_handler(CommandHandler("fabbioquiz", quiz))
-    app.add_handler(CommandHandler("help", help_command))
-    app.add_handler(CommandHandler("ripulisci", ripulisci))
-    app.add_handler(CallbackQueryHandler(quiz_callback, pattern=r"^quiz\|"))
+    app.add_handler(CommandHandler("ripulisci_avanzato", ripulisci_avanzato))
 
     await app.initialize()
     web_app = web.Application()
@@ -264,6 +139,16 @@ async def main():
 
     while True:
         await asyncio.sleep(3600)
+
+async def telegram_webhook_handler(request):
+    try:
+        data = await request.json()
+        update = Update.de_json(data, app.bot)
+        await app.process_update(update)
+        return web.Response(text="OK")
+    except Exception as e:
+        logging.exception("Errore nel webhook handler:")
+        return web.Response(status=500, text="Errore")
 
 if __name__ == "__main__":
     nest_asyncio.apply()
